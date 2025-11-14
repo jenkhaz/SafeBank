@@ -1,4 +1,6 @@
 # backend/auth_service/routes.py
+# In summary: this code handles user registration, including form rendering, input validation, duplicate email checking, password hashing, and user creation.
+
 
 from flask import Blueprint, request, jsonify, render_template
 
@@ -8,6 +10,16 @@ from backend.common.models import User
 from backend.common.security import hash_password, get_or_create_role
 
 auth_bp = Blueprint("auth", __name__)
+
+@auth_bp.route("/", methods=["GET"])
+def index():
+    """Root route for auth service"""
+    return jsonify({
+        "service": "SafeBank Authentication Service",
+        "available_routes": {
+            "register": "/auth/register (GET/POST)"
+        }
+    })
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
@@ -44,8 +56,8 @@ def register():
         email=email,
         phone=phone,
         password_hash=hash_password(password),
-        role=customer_role,
     )
+    user.roles.append(customer_role)
     
     db.session.add(user)
     db.session.commit()
@@ -58,7 +70,7 @@ def register():
                 "id": user.id,
                 "full_name": user.full_name,
                 "email": user.email,
-                "role": user.role.name,
+                "role": user.roles[0].name if user.roles else None,
             },
         }
     ), 201

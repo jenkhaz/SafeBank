@@ -1,9 +1,14 @@
+#  it sets up and launches the authentication 
+# microservice, ensuring the database and roles are 
+# ready, and exposes authentication routes.
+
 from flask import Flask
 
 # SUBJECT TO CHANGE FROM REND's CODE
 from backend.common.config import Config
-from backend.common.db import init_db
+from backend.common.db import db, init_db
 from backend.common.security import create_default_roles
+import backend.common.models  # noqa: F401  # Import models so tables are registered
 from backend.auth_service.routes import auth_bp
 
 def create_auth_app():
@@ -16,6 +21,8 @@ def create_auth_app():
 
     init_db(app)
     with app.app_context():
+        # Create tables if they don't exist
+        db.create_all()
         create_default_roles()
 
     app.register_blueprint(auth_bp, url_prefix="/auth")

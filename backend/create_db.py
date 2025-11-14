@@ -1,15 +1,13 @@
 # backend/create_db.py
 from flask import Flask
-from common.db import db, init_db  # note: relative to backend/
-import common.models  # noqa: F401  # make sure models are imported so tables are registered
+from backend.common.config import Config
+from backend.common.db import db, init_db
+import backend.common.models  # noqa: F401  # make sure models are imported so tables are registered
 
 
 def create_app():
     app = Flask(__name__)
-    # you can override DB path here if you want:
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///../banking.db"
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
+    app.config.from_object(Config)
     init_db(app)
     return app
 
