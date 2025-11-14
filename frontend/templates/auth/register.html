@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SafeBank - Register</title>
+</head>
+<body>
+  <h1>Create an account</h1>
+  <form method="post" action="/auth/register">
+    <label>Full name:
+      <input type="text" name="full_name" required>
+    </label><br>
+
+    <label>Email:
+      <input type="email" name="email" required>
+    </label><br>
+
+    <label>Phone:
+      <input type="text" name="phone" required>
+    </label><br>
+
+    <label>Password:
+      <input type="password" name="password" required minlength="6">
+    </label><br>
+
+    <button type="submit">Register</button>
+  </form>
+</body>
+</html>
