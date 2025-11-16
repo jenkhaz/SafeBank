@@ -1,0 +1,19 @@
+version: '3.9'
+
+services:
+  auth:
+    build: ./auth_service
+    container_name: auth_service
+    environment:
+      - FLASK_APP=app
+      - FLASK_ENV=development
+      - SECRET_KEY=super-secret-change-this
+      - JWT_SECRET_KEY=super-jwt-secret-change-this
+      - DATABASE_URL=sqlite:////data/auth.db
+    volumes:
+      - auth_data:/data
+    ports:
+      - "5001:5000"  # host:container
+
+volumes:
+  auth_data:
