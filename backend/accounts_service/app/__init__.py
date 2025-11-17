@@ -1,7 +1,7 @@
 from flask import Flask
 from .config import Config
 from .extensions import db
-from .routes import auth_bp
+from .routes import accounts_bp, transactions_bp
 
 
 def create_app():
@@ -10,16 +10,16 @@ def create_app():
 
     db.init_app(app)
 
-    app.register_blueprint(auth_bp, url_prefix="/auth")
+    app.register_blueprint(accounts_bp, url_prefix="/accounts")
+    app.register_blueprint(transactions_bp, url_prefix="/transactions")
 
     @app.get("/health")
     def health():
-        return {"status": "ok"}, 200
+        return {"status": "ok"}
 
     return app
 
 
-# For `flask run` (FLASK_APP=app)
 def __getattr__(name):
     if name == "app":
         return create_app()

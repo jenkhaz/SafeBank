@@ -8,14 +8,15 @@ ENV PYTHONPATH=/app
 
 RUN pip install --upgrade pip
 
-COPY auth_service/requirements.txt .
+COPY accounts_service/requirements.txt .
 RUN pip install -r requirements.txt
 
-COPY auth_service/app ./app
-COPY auth_service/entrypoint.sh /entrypoint.sh
-ENTRYPOINT ["sh", "/entrypoint.sh"]
+COPY accounts_service/app ./app
 
 COPY common ./common
+
+COPY accounts_service/entrypoint.sh /entrypoint.sh
+ENTRYPOINT ["sh", "/entrypoint.sh"]
 
 EXPOSE 5000
 
