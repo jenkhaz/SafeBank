@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+  auth:
+    build:
+      context: .
+      dockerfile: auth_service/Dockerfile
+    container_name: auth_service
+    environment:
+      - FLASK_APP=app
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - SECRET_KEY=super-secret-change-this
+      - JWT_SECRET_KEY=super-jwt-secret-change-this
+      - DATABASE_URL=sqlite:////data/auth.db
+    volumes:
+      - auth_data:/data
+      - ./auth_service/app:/app/app
+      - ./common:/app/common
+    ports:
+      - "5001:5000"  # host:container
+
+  accounts:
+    build:
+      context: .
+      dockerfile: accounts_service/Dockerfile
+    container_name: accounts_service
+    environment:
+      - FLASK_APP=app
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - SECRET_KEY=xyz
+      - JWT_SECRET_KEY=super-jwt-secret-change-this
+      - DATABASE_URL=sqlite:////data/accounts.db
+    volumes:
+      - accounts_data:/data
+      - ./accounts_service/app:/app/app
+      - ./common:/app/common
+    ports:
+      - "5002:5000"
+    depends_on:
+      - auth
+
+volumes:
+  auth_data:
+  accounts_data:
