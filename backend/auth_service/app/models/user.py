@@ -12,6 +12,7 @@ class User(db.Model):
     phone = db.Column(db.String(20), nullable=False)
 
     is_active = db.Column(db.Boolean, default=True, nullable=False)
+    must_change_password = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     roles = db.relationship(
@@ -21,12 +22,13 @@ class User(db.Model):
         lazy="joined",
     )
 
-    def __init__(self, email, full_name, password_hash, phone=None, is_active=True, created_at=None):
+    def __init__(self, email, full_name, password_hash, phone=None, is_active=True, must_change_password=False, created_at=None):
         self.email = email
         self.full_name = full_name
         self.password_hash = password_hash
         self.phone = phone if phone is not None else ""
         self.is_active = is_active
+        self.must_change_password = must_change_password
         self.created_at = created_at if created_at is not None else datetime.utcnow()
 
     def to_dict_basic(self):
@@ -36,4 +38,5 @@ class User(db.Model):
             "full_name": self.full_name,
             "roles": [r.name for r in self.roles],  # type: ignore
             "is_active": self.is_active,
+            "must_change_password": self.must_change_password,
         }

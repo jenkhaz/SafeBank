@@ -110,18 +110,27 @@ def seed_default_admin(roles_by_name: dict[str, Role]):
     if admin:
         return
 
+    # NOTE: Change this password immediately after first login!
+    # Use a strong password in production: mix of uppercase, lowercase, numbers, and symbols
+    default_password = "Admin@2024!"
+    
     admin_role = roles_by_name.get("admin")
     admin_user = User(
         email=admin_email,
         full_name="Default Admin",
         phone="00000000",  # you can change this
-        password_hash=hash_password("admin123"),
+        password_hash=hash_password(default_password),
         is_active=True,
+        must_change_password=True,  # Force password change on first login
     )
     if admin_role:
         admin_user.roles.append(admin_role)
 
     db.session.add(admin_user)
+    print(f"⚠️  DEFAULT ADMIN CREATED")
+    print(f"    Email: {admin_email}")
+    print(f"    Password: {default_password}")
+    print(f"    ⚠️  CHANGE THIS PASSWORD IMMEDIATELY AFTER FIRST LOGIN!")
 
 
 def main():

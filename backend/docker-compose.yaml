@@ -41,6 +41,26 @@ services:
     depends_on:
       - auth
 
+  admin:
+    build:
+      context: .
+      dockerfile: admin_service/Dockerfile
+    container_name: admin_service
+    environment:
+      - FLASK_APP=app
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - SECRET_KEY=admin-secret-key
+      - JWT_SECRET_KEY=super-jwt-secret-change-this
+      - AUTH_SERVICE_URL=http://auth:5000
+    volumes:
+      - ./admin_service/app:/app/app
+      - ./common:/app/common
+    ports:
+      - "5003:5000"
+    depends_on:
+      - auth
+
 volumes:
   auth_data:
   accounts_data:
