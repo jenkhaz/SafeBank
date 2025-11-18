@@ -7,8 +7,9 @@ import logging
 from ..extensions import db
 from ..models import User, Role, Permission
 from ..security.password import hash_password, verify_password
-from common.security.jwt_helpers import require_jwt
+from common.security.jwt_helpers import require_jwt, create_jwt
 from common.security.rbac import require_permission
+
 
 auth_bp = Blueprint("auth", __name__)
 logger = logging.getLogger(__name__)
@@ -116,11 +117,7 @@ def login():
         "aud": "safe_bank",
     }
 
-    token = jwt.encode(
-        payload,
-        current_app.config["JWT_SECRET_KEY"],
-        algorithm="HS256",  # we'll switch to RS256 later if you want
-    )
+    token = create_jwt(payload)
 
     return jsonify({"access_token": token, "user": user.to_dict_basic()}), 200
 

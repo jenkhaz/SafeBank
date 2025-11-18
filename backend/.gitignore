@@ -1,2 +1,5 @@
 **__pycache__/**
 **.db**
+# JWT Keys - DO NOT COMMIT
+keys/
+*.pem

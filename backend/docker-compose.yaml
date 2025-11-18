@@ -11,9 +11,13 @@ services:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
       - SECRET_KEY=super-secret-change-this
-      - JWT_SECRET_KEY=super-jwt-secret-change-this
+      # - JWT_SECRET_KEY=super-jwt-secret-change-this
+      - JWT_PRIVATE_KEY_PATH=/app/keys/jwt_private_key.pem  # Private key for signing
+      - JWT_PUBLIC_KEY_PATH=/app/keys/jwt_public_key.pem    # Public key for verification
       - DATABASE_URL=sqlite:////data/auth.db
     volumes:
+      - ./keys:/app/keys:ro  # Mount keys directory (read-only)
+    # volumes:
       - auth_data:/data
       - ./auth_service/app:/app/app
       - ./common:/app/common
@@ -30,12 +34,14 @@ services:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
       - SECRET_KEY=xyz
-      - JWT_SECRET_KEY=super-jwt-secret-change-this
+      # - JWT_SECRET_KEY=super-jwt-secret-change-this
+      - JWT_PUBLIC_KEY_PATH=/app/keys/jwt_public_key.pem  # Only needs public key
       - DATABASE_URL=sqlite:////data/accounts.db
     volumes:
       - accounts_data:/data
       - ./accounts_service/app:/app/app
       - ./common:/app/common
+      - ./keys/jwt_public_key.pem:/app/keys/jwt_public_key.pem:ro  # Only public key
     ports:
       - "5002:5000"
     depends_on:
@@ -51,9 +57,11 @@ services:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
       - SECRET_KEY=admin-secret-key
-      - JWT_SECRET_KEY=super-jwt-secret-change-this
+      # - JWT_SECRET_KEY=super-jwt-secret-change-this
       - AUTH_SERVICE_URL=http://auth:5000
+      - JWT_PUBLIC_KEY_PATH=/app/keys/jwt_public_key.pem
     volumes:
+      - ./keys/jwt_public_key.pem:/app/keys/jwt_public_key.pem:ro
       - ./admin_service/app:/app/app
       - ./common:/app/common
     ports:
