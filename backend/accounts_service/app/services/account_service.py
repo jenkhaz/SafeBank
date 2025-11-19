@@ -23,8 +23,9 @@ def internal_transfer(user_id: int, sender_id: int, receiver_id: int, amount: fl
     if amount <= 0:
         raise ValueError("Amount must be positive")
 
-    sender = Account.query.filter_by(id=sender_id, user_id=user_id).first()
-    receiver = Account.query.filter_by(id=receiver_id, user_id=user_id).first()
+    # Lock rows for update to prevent race conditions
+    sender = db.session.query(Account).filter_by(id=sender_id, user_id=user_id).with_for_update().first()
+    receiver = db.session.query(Account).filter_by(id=receiver_id, user_id=user_id).with_for_update().first()
 
     if not sender or not receiver:
         raise InvalidAccountError("One or both accounts not found or not owned by user")
@@ -55,8 +56,9 @@ def external_transfer(user_id: int, sender_id: int, receiver_account_number: str
     if amount <= 0:
         raise ValueError("Amount must be positive")
 
-    sender = Account.query.filter_by(id=sender_id, user_id=user_id).first()
-    receiver = Account.query.filter_by(account_number=receiver_account_number).first()
+    # Lock rows for update to prevent race conditions
+    sender = db.session.query(Account).filter_by(id=sender_id, user_id=user_id).with_for_update().first()
+    receiver = db.session.query(Account).filter_by(account_number=receiver_account_number).with_for_update().first()
 
     if not sender:
         raise InvalidAccountError("Sender account not found or not owned by user")

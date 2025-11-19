@@ -4,7 +4,7 @@ import jwt
 import re
 import logging
 
-from ..extensions import db
+from ..extensions import db, limiter
 from ..models import User, Role, Permission
 from ..security.password import hash_password, verify_password
 from common.security.jwt_helpers import require_jwt, create_jwt
@@ -36,6 +36,7 @@ def validate_password_strength(password: str) -> tuple[bool, str]:
     return True, ""
 
 @auth_bp.post("/register")
+@limiter.limit("5 per hour")
 def register():
     data = request.get_json() or {}
 
@@ -78,6 +79,7 @@ def register():
 
 
 @auth_bp.post("/login")
+@limiter.limit("5 per 15 minutes")
 def login():
     data = request.get_json() or {}
     email = data.get("email")
@@ -138,6 +140,7 @@ def get_my_roles_and_permissions():
 
 
 @auth_bp.post("/force-password-change")
+@limiter.limit("3 per hour")
 def force_password_change():
     """
     Allow users who must change password to do so without a valid JWT.
@@ -178,6 +181,7 @@ def force_password_change():
 
 @auth_bp.post("/admin/change-username-password")
 @require_permission("admin")
+@limiter.limit("10 per hour")
 def admin_change_username_password():
     data = request.get_json() or {}
     user_id = g.user.get("user_id")
@@ -218,6 +222,7 @@ def admin_change_username_password():
 
 @auth_bp.post("/admin/edit-user-profile")
 @require_permission("users:edit")
+@limiter.limit("30 per hour")
 def admin_edit_user_roles():
     data = request.get_json() or {}
     user_id = data.get("user_id")

@@ -1,0 +1,695 @@
+{
+	"info": {
+		"_postman_id": "safebank-collection-001",
+		"name": "SafeBank API Collection",
+		"description": "Complete collection for SafeBank banking operations",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "auth_port",
+			"value": "5001",
+			"type": "string"
+		},
+		{
+			"key": "accounts_port",
+			"value": "5002",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "account_id_1",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "account_id_2",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "account_number_2",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Register New User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Save JWT token automatically",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('jwt_token', jsonData.access_token);",
+									"    console.log('JWT token saved:', jsonData.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"john_doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}:{{auth_port}}/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{auth_port}}",
+							"path": [
+								"auth",
+								"register"
+							]
+						},
+						"description": "Register a new customer account. JWT token is automatically saved."
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Save JWT token automatically",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('jwt_token', jsonData.access_token);",
+									"    console.log('JWT token saved:', jsonData.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"john_doe\",\n  \"password\": \"SecurePass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}:{{auth_port}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{auth_port}}",
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with existing credentials. JWT token is automatically saved."
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints - Register and Login"
+		},
+		{
+			"name": "2. Account Management",
+			"item": [
+				{
+					"name": "Create Checking Account",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Save account ID automatically",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('account_id_1', jsonData.id);",
+									"    console.log('Account ID saved:', jsonData.id);",
+									"    console.log('Account Number:', jsonData.account_number);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"type\": \"checking\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}:{{accounts_port}}/accounts/",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{accounts_port}}",
+							"path": [
+								"accounts",
+								""
+							]
+						},
+						"description": "Create a checking account. Account ID is automatically saved as account_id_1."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Savings Account",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Save second account details",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('account_id_2', jsonData.id);",
+									"    pm.collectionVariables.set('account_number_2', jsonData.account_number);",
+									"    console.log('Savings Account ID:', jsonData.id);",
+									"    console.log('Savings Account Number:', jsonData.account_number);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"type\": \"savings\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}:{{accounts_port}}/accounts/",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{accounts_port}}",
+							"path": [
+								"accounts",
+								""
+							]
+						},
+						"description": "Create a savings account. Account ID and number are automatically saved."
+					},
+					"response": []
+				},
+				{
+					"name": "List My Accounts",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}:{{accounts_port}}/accounts/",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{accounts_port}}",
+							"path": [
+								"accounts",
+								""
+							]
+						},
+						"description": "List all accounts belonging to the authenticated user."
+					},
+					"response": []
+				}
+			],
+			"description": "Account creation and management"
+		},
+		{
+			"name": "3. Transactions",
+			"item": [
+				{
+					"name": "Deposit Money",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"account_id\": {{account_id_1}},\n  \"amount\": 1000.00,\n  \"description\": \"Initial deposit\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}:{{accounts_port}}/transactions/deposit",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{accounts_port}}",
+							"path": [
+								"transactions",
+								"deposit"
+							]
+						},
+						"description": "Deposit money into your checking account. Uses saved account_id_1."
+					},
+					"response": []
+				},
+				{
+					"name": "Withdraw Money",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"account_id\": {{account_id_1}},\n  \"amount\": 200.00,\n  \"description\": \"ATM withdrawal\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}:{{accounts_port}}/transactions/withdraw",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{accounts_port}}",
+							"path": [
+								"transactions",
+								"withdraw"
+							]
+						},
+						"description": "Withdraw money from your checking account. Validates sufficient balance."
+					},
+					"response": []
+				},
+				{
+					"name": "Internal Transfer (Between Own Accounts)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"sender_account_id\": {{account_id_1}},\n  \"receiver_account_id\": {{account_id_2}},\n  \"amount\": 300.00,\n  \"description\": \"Transfer to savings\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}:{{accounts_port}}/transactions/internal",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{accounts_port}}",
+							"path": [
+								"transactions",
+								"internal"
+							]
+						},
+						"description": "Transfer between your own accounts (checking → savings). Uses saved account IDs."
+					},
+					"response": []
+				},
+				{
+					"name": "External Transfer (To Another User)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"sender_account_id\": {{account_id_1}},\n  \"receiver_account_number\": \"ACCT-2-1\",\n  \"amount\": 50.00,\n  \"description\": \"Payment to friend\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}:{{accounts_port}}/transactions/external",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{accounts_port}}",
+							"path": [
+								"transactions",
+								"external"
+							]
+						},
+						"description": "Transfer to another user's account using their account number. Change 'ACCT-2-1' to actual recipient account number."
+					},
+					"response": []
+				}
+			],
+			"description": "All transaction operations - deposits, withdrawals, and transfers"
+		},
+		{
+			"name": "4. Transaction History",
+			"item": [
+				{
+					"name": "Get All Transactions",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}:{{accounts_port}}/transactions/",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{accounts_port}}",
+							"path": [
+								"transactions",
+								""
+							]
+						},
+						"description": "Get complete transaction history for all your accounts."
+					},
+					"response": []
+				},
+				{
+					"name": "Filter by Date Range",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}:{{accounts_port}}/transactions/?start_date=2025-11-01&end_date=2025-11-30",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{accounts_port}}",
+							"path": [
+								"transactions",
+								""
+							],
+							"query": [
+								{
+									"key": "start_date",
+									"value": "2025-11-01",
+									"description": "Start date (YYYY-MM-DD)"
+								},
+								{
+									"key": "end_date",
+									"value": "2025-11-30",
+									"description": "End date (YYYY-MM-DD)"
+								}
+							]
+						},
+						"description": "Filter transactions by date range. Format: YYYY-MM-DD"
+					},
+					"response": []
+				},
+				{
+					"name": "Filter by Transaction Type",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}:{{accounts_port}}/transactions/?type=deposit",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{accounts_port}}",
+							"path": [
+								"transactions",
+								""
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "deposit",
+									"description": "Options: deposit, withdrawal, internal, external"
+								}
+							]
+						},
+						"description": "Filter by transaction type. Valid types: deposit, withdrawal, internal, external"
+					},
+					"response": []
+				},
+				{
+					"name": "Filter by Amount Range",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}:{{accounts_port}}/transactions/?min_amount=100&max_amount=500",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{accounts_port}}",
+							"path": [
+								"transactions",
+								""
+							],
+							"query": [
+								{
+									"key": "min_amount",
+									"value": "100",
+									"description": "Minimum transaction amount"
+								},
+								{
+									"key": "max_amount",
+									"value": "500",
+									"description": "Maximum transaction amount"
+								}
+							]
+						},
+						"description": "Filter transactions by amount range."
+					},
+					"response": []
+				},
+				{
+					"name": "Combined Filters",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}:{{accounts_port}}/transactions/?start_date=2025-11-01&type=external&min_amount=50",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{accounts_port}}",
+							"path": [
+								"transactions",
+								""
+							],
+							"query": [
+								{
+									"key": "start_date",
+									"value": "2025-11-01"
+								},
+								{
+									"key": "type",
+									"value": "external"
+								},
+								{
+									"key": "min_amount",
+									"value": "50"
+								}
+							]
+						},
+						"description": "Use multiple filters together."
+					},
+					"response": []
+				},
+				{
+					"name": "Export to PDF",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}:{{accounts_port}}/transactions/export-pdf",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{accounts_port}}",
+							"path": [
+								"transactions",
+								"export-pdf"
+							]
+						},
+						"description": "Export transaction history to PDF. Supports all filters (add query params as needed)."
+					},
+					"response": []
+				}
+			],
+			"description": "Transaction history viewing and filtering"
+		}
+	]
+}

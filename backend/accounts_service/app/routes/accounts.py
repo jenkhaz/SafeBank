@@ -1,7 +1,8 @@
-from flask import Blueprint, jsonify, g, request
+from flask import Blueprint, jsonify, g, request, current_app
 from ..models.account import Account
-from ..extensions import db
+from ..extensions import db, limiter
 from ..security.rbac import require_permission
+import uuid
 
 accounts_bp = Blueprint("accounts", __name__)
 
@@ -16,6 +17,7 @@ def list_my_accounts():
 
 @accounts_bp.post("/")
 @require_permission("accounts:create:own")
+@limiter.limit("10 per day")
 def create_account():
     data = request.json or {}
     acc_type = data.get("type")
@@ -24,7 +26,7 @@ def create_account():
         return {"msg": "Invalid account type"}, 400
 
     new = Account(
-        account_number=f"ACCT-{g.user['user_id']}-{Account.query.count()+1}",
+        account_number = f"ACCT-{g.user['user_id']}-{uuid.uuid4().hex[:8]}",
         user_id=g.user["user_id"],
         type=acc_type,
         balance=0.0,
@@ -36,6 +38,7 @@ def create_account():
 
 @accounts_bp.post("/admin/create")
 @require_permission("accounts:create:any")
+@limiter.limit("50 per hour")
 def admin_create_account():
     data = request.json or {}
     user_id = data.get("user_id")
