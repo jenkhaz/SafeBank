@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify, g, make_response, current_app
+from decimal import Decimal, InvalidOperation
 from ..extensions import db, limiter
 from ..models import Transaction, Account
 from ..security.rbac import require_permission
@@ -35,8 +36,10 @@ def handle_internal_transfer():
 
     try:
         amount = float(amount)
+        if amount <= 0:
+            return {"msg": "amount must be positive"}, 400
     except (TypeError, ValueError):
-        return {"msg": "amount must be a number"}, 400
+        return {"msg": "amount must be a valid number"}, 400
 
     try:
         tx = internal_transfer(
@@ -69,8 +72,10 @@ def handle_external_transfer():
 
     try:
         amount = float(amount)
+        if amount <= 0:
+            return {"msg": "amount must be positive"}, 400
     except (TypeError, ValueError):
-        return {"msg": "amount must be a number"}, 400
+        return {"msg": "amount must be a valid number"}, 400
 
     try:
         tx = external_transfer(
@@ -325,18 +330,17 @@ def top_up_account():
         return {"msg": "account_id and amount are required"}, 400
 
     try:
-        amount = float(amount)
-    except (TypeError, ValueError):
-        return {"msg": "amount must be a number"}, 400
-
-    if amount <= 0:
-        return {"msg": "amount must be positive"}, 400
+        amount_decimal = Decimal(str(amount))
+        if amount_decimal <= 0:
+            return {"msg": "amount must be positive"}, 400
+    except (TypeError, ValueError, InvalidOperation):
+        return {"msg": "amount must be a valid number"}, 400
 
     account = Account.query.filter_by(id=account_id).first()
     if not account:
         return {"msg": "Account not found"}, 404
 
-    account.balance += amount
+    account.balance += amount_decimal
     db.session.commit()
 
     return account.to_dict(), 200
@@ -357,15 +361,14 @@ def deposit_to_own_account():
         return {"msg": "account_id and amount are required"}, 400
 
     try:
-        amount = float(amount)
-    except (TypeError, ValueError):
-        return {"msg": "amount must be a number"}, 400
-
-    if amount <= 0:
-        return {"msg": "amount must be positive"}, 400
+        amount_decimal = Decimal(str(amount))
+        if amount_decimal <= 0:
+            return {"msg": "amount must be positive"}, 400
+    except (TypeError, ValueError, InvalidOperation):
+        return {"msg": "amount must be a valid number"}, 400
 
     # Verify account belongs to user
-    account = Account.query.filter_by(id=account_id, user_id=user_id).first()
+    account = Account.query.filter_by(id=account_id, user_id=user_id).with_for_update().first()
     if not account:
         return {"msg": "Account not found or does not belong to you"}, 404
 
@@ -375,13 +378,13 @@ def deposit_to_own_account():
 
     # Update balance
     old_balance = account.balance
-    account.balance += amount
+    account.balance += amount_decimal
 
     # Create a transaction record for deposit (sender = receiver = same account)
     tx = Transaction(
         sender_account_id=account.id,
         receiver_account_id=account.id,
-        amount=amount,
+        amount=amount_decimal,
         type="deposit",
         description=description or "Deposit to account",
     )
@@ -393,8 +396,8 @@ def deposit_to_own_account():
         "msg": "Deposit successful",
         "account": account.to_dict(),
         "transaction": tx.to_dict(),
-        "previous_balance": old_balance,
-        "new_balance": account.balance
+        "previous_balance": float(old_balance),
+        "new_balance": float(account.balance)
     }, 201
 
 
@@ -413,15 +416,14 @@ def withdraw_from_own_account():
         return {"msg": "account_id and amount are required"}, 400
 
     try:
-        amount = float(amount)
-    except (TypeError, ValueError):
-        return {"msg": "amount must be a number"}, 400
-
-    if amount <= 0:
-        return {"msg": "amount must be positive"}, 400
+        amount_decimal = Decimal(str(amount))
+        if amount_decimal <= 0:
+            return {"msg": "amount must be positive"}, 400
+    except (TypeError, ValueError, InvalidOperation):
+        return {"msg": "amount must be a valid number"}, 400
 
     # Verify account belongs to user
-    account = Account.query.filter_by(id=account_id, user_id=user_id).first()
+    account = Account.query.filter_by(id=account_id, user_id=user_id).with_for_update().first()
     if not account:
         return {"msg": "Account not found or does not belong to you"}, 404
 
@@ -430,18 +432,18 @@ def withdraw_from_own_account():
         return {"msg": f"Account is {account.status}. Cannot withdraw from inactive account."}, 400
 
     # Check sufficient balance
-    if account.balance < amount:
+    if account.balance < amount_decimal:
         return {"msg": "Insufficient funds"}, 400
 
     # Update balance
     old_balance = account.balance
-    account.balance -= amount
+    account.balance -= amount_decimal
 
     # Create a transaction record for withdrawal
     tx = Transaction(
         sender_account_id=account.id,
         receiver_account_id=account.id,
-        amount=amount,
+        amount=amount_decimal,
         type="withdrawal",
         description=description or "Withdrawal from account",
     )
@@ -453,8 +455,8 @@ def withdraw_from_own_account():
         "msg": "Withdrawal successful",
         "account": account.to_dict(),
         "transaction": tx.to_dict(),
-        "previous_balance": old_balance,
-        "new_balance": account.balance
+        "previous_balance": float(old_balance),
+        "new_balance": float(account.balance)
     }, 201
 
 

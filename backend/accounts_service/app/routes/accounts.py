@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, g, request, current_app
+from decimal import Decimal
 from ..models.account import Account
 from ..extensions import db, limiter
 from ..security.rbac import require_permission
@@ -29,7 +30,7 @@ def create_account():
         account_number = f"ACCT-{g.user['user_id']}-{uuid.uuid4().hex[:8]}",
         user_id=g.user["user_id"],
         type=acc_type,
-        balance=0.0,
+        balance=Decimal('0.00'),
     )
 
     db.session.add(new)
@@ -54,7 +55,7 @@ def admin_create_account():
         account_number=f"ACCT-{user_id}-{Account.query.count()+1}",
         user_id=user_id,
         type=acc_type,
-        balance=0.0,
+        balance=Decimal('0.00'),
     )
 
     db.session.add(new)
