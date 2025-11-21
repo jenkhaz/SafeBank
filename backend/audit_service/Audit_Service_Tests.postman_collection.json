@@ -1,0 +1,759 @@
+{
+	"info": {
+		"_postman_id": "audit-service-tests-001",
+		"name": "Audit Service Tests",
+		"description": "Complete test suite for Audit Service including audit logs and security events",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:5005",
+			"type": "string"
+		},
+		{
+			"key": "auth_url",
+			"value": "http://localhost:5001",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "auditor_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "log_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "event_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "0. Setup - Authentication",
+			"item": [
+				{
+					"name": "Register Auditor",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    console.log('Auditor registered successfully');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"auditor@safebank.com\",\n    \"password\": \"Auditor@123\",\n    \"full_name\": \"Security Auditor\",\n    \"role\": \"auditor\"\n}"
+						},
+						"url": {
+							"raw": "{{auth_url}}/auth/register",
+							"host": [
+								"{{auth_url}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login as Auditor",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('auditor_token', response.access_token);",
+									"    pm.collectionVariables.set('jwt_token', response.access_token);",
+									"    console.log('Auditor token saved');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"auditor@safebank.com\",\n    \"password\": \"Auditor@123\"\n}"
+						},
+						"url": {
+							"raw": "{{auth_url}}/auth/login",
+							"host": [
+								"{{auth_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "1. Audit Logs - Create (Services)",
+			"item": [
+				{
+					"name": "Log Successful Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('log_id', response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"service\": \"auth\",\n    \"action\": \"login\",\n    \"status\": \"success\",\n    \"user_id\": 1,\n    \"user_email\": \"admin@safebank.com\",\n    \"user_role\": \"admin\",\n    \"ip_address\": \"192.168.1.100\",\n    \"user_agent\": \"Mozilla/5.0\",\n    \"details\": \"{\\\"method\\\": \\\"password\\\"}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/audit/log",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"audit",
+								"log"
+							]
+						},
+						"description": "Services call this to log events"
+					},
+					"response": []
+				},
+				{
+					"name": "Log Failed Login",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"service\": \"auth\",\n    \"action\": \"login\",\n    \"status\": \"failure\",\n    \"user_email\": \"hacker@test.com\",\n    \"ip_address\": \"10.0.0.99\",\n    \"user_agent\": \"curl/7.64\",\n    \"details\": \"{\\\"reason\\\": \\\"invalid_password\\\"}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/audit/log",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"audit",
+								"log"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Log Account Creation",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"service\": \"accounts\",\n    \"action\": \"create_account\",\n    \"status\": \"success\",\n    \"user_id\": 1,\n    \"user_email\": \"admin@safebank.com\",\n    \"user_role\": \"admin\",\n    \"resource_type\": \"account\",\n    \"resource_id\": \"1\",\n    \"ip_address\": \"192.168.1.100\",\n    \"details\": \"{\\\"account_type\\\": \\\"checking\\\", \\\"initial_balance\\\": 0}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/audit/log",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"audit",
+								"log"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Log Transfer Transaction",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"service\": \"accounts\",\n    \"action\": \"transfer\",\n    \"status\": \"success\",\n    \"user_id\": 1,\n    \"user_email\": \"admin@safebank.com\",\n    \"resource_type\": \"transaction\",\n    \"resource_id\": \"1\",\n    \"ip_address\": \"192.168.1.100\",\n    \"details\": \"{\\\"from_account\\\": 1, \\\"to_account\\\": 2, \\\"amount\\\": 100.00}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/audit/log",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"audit",
+								"log"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Log Account Freeze",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"service\": \"accounts\",\n    \"action\": \"freeze_account\",\n    \"status\": \"success\",\n    \"user_id\": 1,\n    \"user_email\": \"admin@safebank.com\",\n    \"user_role\": \"admin\",\n    \"resource_type\": \"account\",\n    \"resource_id\": \"2\",\n    \"ip_address\": \"192.168.1.100\",\n    \"details\": \"{\\\"reason\\\": \\\"suspicious_activity\\\"}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/audit/log",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"audit",
+								"log"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. Audit Logs - View (Auditors)",
+			"item": [
+				{
+					"name": "View All Audit Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/audit/logs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"audit",
+								"logs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "View Logs - Filter by Service",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/audit/logs?service=auth",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"audit",
+								"logs"
+							],
+							"query": [
+								{
+									"key": "service",
+									"value": "auth"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "View Logs - Filter by Action",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/audit/logs?action=login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"audit",
+								"logs"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "login"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "View Logs - Filter by Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/audit/logs?status=failure",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"audit",
+								"logs"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "failure"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "View Logs - Filter by User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/audit/logs?user_id=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"audit",
+								"logs"
+							],
+							"query": [
+								{
+									"key": "user_id",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "View Specific Audit Log",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/audit/logs/{{log_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"audit",
+								"logs",
+								"{{log_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "View User Audit Trail",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/audit/logs/user/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"audit",
+								"logs",
+								"user",
+								"1"
+							]
+						},
+						"description": "Get all audit logs for a specific user"
+					},
+					"response": []
+				},
+				{
+					"name": "View Audit Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/audit/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"audit",
+								"stats"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Security Events - Create (Services)",
+			"item": [
+				{
+					"name": "Log Failed Login Attempt",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('event_id', response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"event_type\": \"failed_login\",\n    \"severity\": \"medium\",\n    \"user_email\": \"hacker@test.com\",\n    \"description\": \"Multiple failed login attempts detected\",\n    \"ip_address\": \"10.0.0.99\",\n    \"user_agent\": \"curl/7.64\",\n    \"details\": \"{\\\"attempts\\\": 5, \\\"timespan\\\": \\\"5 minutes\\\"}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/security/event",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"security",
+								"event"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Log Suspicious Transaction",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"event_type\": \"suspicious_transaction\",\n    \"severity\": \"high\",\n    \"user_id\": 2,\n    \"user_email\": \"customer@test.com\",\n    \"description\": \"Large transaction to foreign account\",\n    \"ip_address\": \"45.67.89.12\",\n    \"details\": \"{\\\"amount\\\": 50000.00, \\\"destination\\\": \\\"foreign_account\\\", \\\"unusual_pattern\\\": true}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/security/event",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"security",
+								"event"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Log Account Lockout",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"event_type\": \"account_lockout\",\n    \"severity\": \"critical\",\n    \"user_id\": 3,\n    \"user_email\": \"victim@test.com\",\n    \"description\": \"Account locked due to 10 failed login attempts\",\n    \"ip_address\": \"10.0.0.99\",\n    \"details\": \"{\\\"failed_attempts\\\": 10, \\\"lockout_duration\\\": \\\"30 minutes\\\"}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/security/event",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"security",
+								"event"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Security Events - View & Investigate",
+			"item": [
+				{
+					"name": "View All Security Events",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/security/events",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"security",
+								"events"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "View Events - Filter by Severity",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/security/events?severity=high",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"security",
+								"events"
+							],
+							"query": [
+								{
+									"key": "severity",
+									"value": "high"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "View Events - Uninvestigated Only",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/security/events?investigated=false",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"security",
+								"events"
+							],
+							"query": [
+								{
+									"key": "investigated",
+									"value": "false"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "View Specific Security Event",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/security/events/{{event_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"security",
+								"events",
+								"{{event_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "View Security Alerts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/security/events/alerts",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"security",
+								"events",
+								"alerts"
+							]
+						},
+						"description": "Get uninvestigated high/critical events"
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Event as Investigated",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"resolution_notes\": \"Investigated the failed login attempts. Confirmed as legitimate user who forgot password. Password reset email sent.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/security/events/{{event_id}}/investigate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"security",
+								"events",
+								"{{event_id}}",
+								"investigate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "View Security Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/security/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"security",
+								"stats"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

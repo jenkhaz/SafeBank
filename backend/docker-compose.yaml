@@ -94,7 +94,30 @@ services:
       - auth
       - accounts
 
+  audit:
+    build:
+      context: .
+      dockerfile: audit_service/Dockerfile
+    container_name: audit_service
+    environment:
+      - FLASK_APP=app
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - SECRET_KEY=audit-secret-key
+      - JWT_PUBLIC_KEY_PATH=/app/keys/jwt_public_key.pem
+      - DATABASE_URL=sqlite:////data/audit.db
+    volumes:
+      - audit_data:/data
+      - ./audit_service/app:/app/app
+      - ./common:/app/common
+      - ./keys/jwt_public_key.pem:/app/keys/jwt_public_key.pem:ro
+    ports:
+      - "5005:5005"
+    depends_on:
+      - auth
+
 volumes:
   auth_data:
   accounts_data:
   support_data:
+  audit_data:

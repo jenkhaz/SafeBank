@@ -190,7 +190,7 @@ def export_transactions_pdf():
             query = query.filter(Transaction.timestamp >= start_dt) # type: ignore
         except ValueError:
             return {"msg": "Invalid start_date format"}, 400
-    
+        
     if end_date:
         try:
             end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
