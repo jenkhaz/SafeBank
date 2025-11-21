@@ -68,3 +68,13 @@ def admin_list_all():
     accounts = Account.query.all()
     return jsonify([a.to_dict() for a in accounts])
 
+
+@accounts_bp.get("/admin/<int:account_id>")
+@require_permission("accounts:view:any")
+def admin_get_account(account_id):
+    """Admin or support agent views a specific account by ID."""
+    account = Account.query.get(account_id)
+    if not account:
+        return {"msg": "Account not found"}, 404
+    return account.to_dict(), 200
+

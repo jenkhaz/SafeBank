@@ -1,0 +1,1468 @@
+{
+	"info": {
+		"_postman_id": "support-service-tests-001",
+		"name": "Support Service Tests",
+		"description": "Complete test suite for Support Service functionality including ticket management, customer operations, and support agent operations",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:5004",
+			"type": "string"
+		},
+		{
+			"key": "auth_url",
+			"value": "http://localhost:5001",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "customer_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "support_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "ticket_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "0. Setup - Authentication",
+			"item": [
+				{
+					"name": "Login as Customer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('customer_token', response.access_token);",
+									"    pm.collectionVariables.set('jwt_token', response.access_token);",
+									"    console.log('Customer token saved');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@safebank.com\",\n    \"password\": \"Admin@123\"\n}"
+						},
+						"url": {
+							"raw": "{{auth_url}}/auth/login",
+							"host": [
+								"{{auth_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login as customer to get JWT token for customer operations"
+					},
+					"response": []
+				},
+				{
+					"name": "Register Support Agent",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    console.log('Support agent registered successfully');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"support@safebank.com\",\n    \"password\": \"Support@123\",\n    \"full_name\": \"Support Agent\",\n    \"role\": \"support_agent\"\n}"
+						},
+						"url": {
+							"raw": "{{auth_url}}/auth/register",
+							"host": [
+								"{{auth_url}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						},
+						"description": "Register a support agent account"
+					},
+					"response": []
+				},
+				{
+					"name": "Login as Support Agent",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('support_token', response.access_token);",
+									"    console.log('Support agent token saved');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"support@safebank.com\",\n    \"password\": \"Support@123\"\n}"
+						},
+						"url": {
+							"raw": "{{auth_url}}/auth/login",
+							"host": [
+								"{{auth_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login as support agent to get JWT token for support operations"
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication setup - get JWT tokens for customer and support agent"
+		},
+		{
+			"name": "1. Customer - Ticket Operations",
+			"item": [
+				{
+					"name": "Create Ticket - Low Priority",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('ticket_id', response.id);",
+									"    console.log('Ticket created with ID: ' + response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('customer_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subject\": \"Cannot access my account\",\n    \"description\": \"I'm having trouble logging into my account. It says my password is incorrect but I'm sure it's correct.\",\n    \"priority\": \"Low\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tickets/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								""
+							]
+						},
+						"description": "Customer creates a new support ticket with low priority"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Ticket - High Priority",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('customer_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subject\": \"Unauthorized transaction\",\n    \"description\": \"I see a transaction for $500 that I did not authorize. This is urgent!\",\n    \"priority\": \"High\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tickets/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								""
+							]
+						},
+						"description": "Customer creates a high priority ticket"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Ticket - Urgent",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('customer_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subject\": \"Account compromised - Multiple unauthorized transactions\",\n    \"description\": \"My account has been hacked! I see 5 unauthorized transactions totaling $2000. Please freeze my account immediately!\",\n    \"priority\": \"Urgent\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tickets/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								""
+							]
+						},
+						"description": "Customer creates an urgent priority ticket"
+					},
+					"response": []
+				},
+				{
+					"name": "List My Tickets",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('customer_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/tickets/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								""
+							]
+						},
+						"description": "Customer views all their own tickets"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Ticket Details",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('customer_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/tickets/{{ticket_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticket_id}}"
+							]
+						},
+						"description": "Customer views details of a specific ticket"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Note to Ticket",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('customer_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"content\": \"I tried resetting my password but haven't received the email yet.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tickets/{{ticket_id}}/notes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticket_id}}",
+								"notes"
+							]
+						},
+						"description": "Customer adds a note to their ticket"
+					},
+					"response": []
+				}
+			],
+			"description": "Customer ticket operations - create, view, and add notes to tickets"
+		},
+		{
+			"name": "2. Support Agent - Ticket Management",
+			"item": [
+				{
+					"name": "View All Tickets",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('support_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/tickets/all",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"all"
+							]
+						},
+						"description": "Support agent views all tickets in the system"
+					},
+					"response": []
+				},
+				{
+					"name": "View All Tickets - Filter by Status",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('support_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/tickets/all?status=Open",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"all"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "Open"
+								}
+							]
+						},
+						"description": "Support agent views open tickets only"
+					},
+					"response": []
+				},
+				{
+					"name": "View All Tickets - Filter by Priority",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('support_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/tickets/all?priority=Urgent",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"all"
+							],
+							"query": [
+								{
+									"key": "priority",
+									"value": "Urgent"
+								}
+							]
+						},
+						"description": "Support agent views urgent tickets only"
+					},
+					"response": []
+				},
+				{
+					"name": "View Specific Ticket",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('support_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/tickets/all/{{ticket_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"all",
+								"{{ticket_id}}"
+							]
+						},
+						"description": "Support agent views any ticket by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Ticket to Self",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('support_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"assigned_to\": null\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tickets/{{ticket_id}}/assign",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticket_id}}",
+								"assign"
+							]
+						},
+						"description": "Support agent assigns ticket to themselves (null = self-assign based on JWT)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Ticket Status - In Progress",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('support_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"In Progress\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tickets/{{ticket_id}}/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticket_id}}",
+								"status"
+							]
+						},
+						"description": "Support agent updates ticket status to In Progress"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Agent Note (Public)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('support_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"content\": \"I've looked into your account and I'm working on resolving this issue. I'll update you within 24 hours.\",\n    \"is_internal\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tickets/{{ticket_id}}/notes/agent",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticket_id}}",
+								"notes",
+								"agent"
+							]
+						},
+						"description": "Support agent adds a public note visible to customer"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Agent Note (Internal)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('support_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"content\": \"Customer has failed login attempts. May need to escalate to security team if suspicious activity continues.\",\n    \"is_internal\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tickets/{{ticket_id}}/notes/agent",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticket_id}}",
+								"notes",
+								"agent"
+							]
+						},
+						"description": "Support agent adds an internal note (not visible to customer)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Ticket Status - Resolved",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('support_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"Resolved\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tickets/{{ticket_id}}/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticket_id}}",
+								"status"
+							]
+						},
+						"description": "Support agent marks ticket as resolved"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Ticket Status - Closed",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('support_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"Closed\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tickets/{{ticket_id}}/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticket_id}}",
+								"status"
+							]
+						},
+						"description": "Support agent closes ticket"
+					},
+					"response": []
+				}
+			],
+			"description": "Support agent ticket management operations"
+		},
+		{
+			"name": "3. Support Agent - Account & Transaction Views",
+			"item": [
+				{
+					"name": "View All Customer Accounts",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('support_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/support/accounts",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"support",
+								"accounts"
+							]
+						},
+						"description": "Support agent views all customer accounts (read-only)"
+					},
+					"response": []
+				},
+				{
+					"name": "View Specific Account Details",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('support_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/support/accounts/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"support",
+								"accounts",
+								"1"
+							]
+						},
+						"description": "Support agent views specific account by ID (read-only)"
+					},
+					"response": []
+				},
+				{
+					"name": "View All Transactions",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('support_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/support/transactions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"support",
+								"transactions"
+							]
+						},
+						"description": "Support agent views all transactions (read-only)"
+					},
+					"response": []
+				},
+				{
+					"name": "View Transactions for Account",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('support_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/support/transactions/account/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"support",
+								"transactions",
+								"account",
+								"1"
+							]
+						},
+						"description": "Support agent views transactions for a specific account (read-only)"
+					},
+					"response": []
+				},
+				{
+					"name": "View Own Profile",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('support_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/support/profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"support",
+								"profile"
+							]
+						},
+						"description": "Support agent views their own profile"
+					},
+					"response": []
+				}
+			],
+			"description": "Support agent read-only access to accounts and transactions"
+		},
+		{
+			"name": "4. Rate Limiting Tests",
+			"item": [
+				{
+					"name": "Test Create Ticket Rate Limit (20/hour)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('customer_token'));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Run this 21 times to hit rate limit",
+									"// After 20 requests, should get 429 Too Many Requests"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subject\": \"Rate limit test\",\n    \"description\": \"Testing rate limiting\",\n    \"priority\": \"Low\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tickets/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								""
+							]
+						},
+						"description": "Test rate limit of 20 ticket creations per hour"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Add Note Rate Limit (50/hour)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('customer_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"content\": \"Rate limit test note\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tickets/{{ticket_id}}/notes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticket_id}}",
+								"notes"
+							]
+						},
+						"description": "Test rate limit of 50 notes per hour"
+					},
+					"response": []
+				}
+			],
+			"description": "Test rate limiting functionality"
+		},
+		{
+			"name": "5. Negative Tests - Authorization",
+			"item": [
+				{
+					"name": "Customer Cannot View All Tickets",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('customer_token'));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Should return 403 Forbidden', function() {",
+									"    pm.response.to.have.status(403);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/tickets/all",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"all"
+							]
+						},
+						"description": "Customer should NOT be able to view all tickets (403)"
+					},
+					"response": []
+				},
+				{
+					"name": "Customer Cannot Assign Tickets",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('customer_token'));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Should return 403 Forbidden', function() {",
+									"    pm.response.to.have.status(403);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"assigned_to\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tickets/{{ticket_id}}/assign",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticket_id}}",
+								"assign"
+							]
+						},
+						"description": "Customer should NOT be able to assign tickets (403)"
+					},
+					"response": []
+				},
+				{
+					"name": "Customer Cannot Update Ticket Status",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('customer_token'));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Should return 403 Forbidden', function() {",
+									"    pm.response.to.have.status(403);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"Closed\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tickets/{{ticket_id}}/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticket_id}}",
+								"status"
+							]
+						},
+						"description": "Customer should NOT be able to update ticket status (403)"
+					},
+					"response": []
+				},
+				{
+					"name": "No Token - Should Fail",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Should return 401 Unauthorized', function() {",
+									"    pm.response.to.have.status(401);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/tickets/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								""
+							]
+						},
+						"description": "Request without JWT token should return 401"
+					},
+					"response": []
+				}
+			],
+			"description": "Test authorization failures and permission checks"
+		},
+		{
+			"name": "6. Edge Cases & Validation",
+			"item": [
+				{
+					"name": "Create Ticket - Missing Subject",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('customer_token'));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Should return 400 Bad Request', function() {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"description\": \"Missing subject field\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tickets/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								""
+							]
+						},
+						"description": "Create ticket without required subject field"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Ticket - Invalid Priority",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('customer_token'));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Should return 400 Bad Request', function() {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subject\": \"Test\",\n    \"description\": \"Testing invalid priority\",\n    \"priority\": \"SuperUrgent\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tickets/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								""
+							]
+						},
+						"description": "Create ticket with invalid priority value"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Status - Invalid Status",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('support_token'));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Should return 400 Bad Request', function() {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"SuperResolved\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tickets/{{ticket_id}}/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticket_id}}",
+								"status"
+							]
+						},
+						"description": "Update ticket with invalid status value"
+					},
+					"response": []
+				},
+				{
+					"name": "View Nonexistent Ticket",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('jwt_token', pm.collectionVariables.get('customer_token'));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Should return 404 Not Found', function() {",
+									"    pm.response.to.have.status(404);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/tickets/99999",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tickets",
+								"99999"
+							]
+						},
+						"description": "View ticket that doesn't exist"
+					},
+					"response": []
+				}
+			],
+			"description": "Test input validation and error handling"
+		}
+	]
+}

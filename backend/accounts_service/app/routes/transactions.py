@@ -317,6 +317,22 @@ def admin_list_all_transactions():
     txs = Transaction.query.order_by(Transaction.timestamp.desc()).all() #type: ignore
     return jsonify([t.to_dict() for t in txs])
 
+
+@bp.get("/admin/account/<int:account_id>")
+@require_permission("transactions:view:any")
+def admin_get_account_transactions(account_id):
+    """Admin or support agent views all transactions for a specific account."""
+    account = Account.query.get(account_id)
+    if not account:
+        return {"msg": "Account not found"}, 404
+    
+    txs = Transaction.query.filter(
+        (Transaction.sender_account_id == account_id) | (Transaction.receiver_account_id == account_id)
+    ).order_by(Transaction.timestamp.desc()).all()
+    
+    return jsonify([t.to_dict() for t in txs])
+
+
 @bp.post("/topup")
 @require_permission("accounts:topup")
 @limiter.limit("50 per hour")
@@ -460,9 +476,10 @@ def withdraw_from_own_account():
     }, 201
 
 
-@bp.get("/top-transactions")
+@bp.get("/recent-transactions")
 @require_permission("transactions:view:own")
-def get_top_transactions():
+def get_recent_transactions():
+    """Get the 5 most recent transactions for a specific account."""
     user_id = g.user["user_id"]
     account_id = request.args.get("account_id")
 
@@ -472,18 +489,19 @@ def get_top_transactions():
     account = Account.query.filter_by(id=account_id, user_id=user_id).first()
     if not account:
         return {"msg": "Account not found"}, 404
-    top_txs = (
+    
+    recent_txs = (
         Transaction.query
         .filter(
             (Transaction.sender_account_id == account.id) | # type: ignore
             (Transaction.receiver_account_id == account.id) # type: ignore
         )
-        .order_by(Transaction.amount.desc()) # type: ignore
+        .order_by(Transaction.timestamp.desc()) # type: ignore
         .limit(5)
         .all()
     )
 
-    return jsonify([t.to_dict() for t in top_txs])
+    return jsonify([t.to_dict() for t in recent_txs])
 
 @bp.post("/admin/change-freeze-status")
 @require_permission("accounts:freeze:any")

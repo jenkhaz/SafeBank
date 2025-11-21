@@ -67,10 +67,14 @@ def register():
         password_hash=hash_password(password),
     )
 
-    # For now: everyone registers as "customer" role if it exists
-    customer_role = Role.query.filter_by(name="customer").first()
-    if customer_role:
-        user.roles.append(customer_role)
+    # Assign role - default to customer if not specified
+    role_name = data.get("role", "customer")
+    role = Role.query.filter_by(name=role_name).first()
+    
+    if not role:
+        return jsonify({"msg": f"Invalid role: {role_name}"}), 400
+    
+    user.roles.append(role)
 
     db.session.add(user)
     db.session.commit()

@@ -69,6 +69,32 @@ services:
     depends_on:
       - auth
 
+  support:
+    build:
+      context: .
+      dockerfile: support_service/Dockerfile
+    container_name: support_service
+    environment:
+      - FLASK_APP=app
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - SECRET_KEY=support-secret-key
+      - JWT_PUBLIC_KEY_PATH=/app/keys/jwt_public_key.pem
+      - DATABASE_URL=sqlite:////data/support.db
+      - AUTH_SERVICE_URL=http://auth:5000
+      - ACCOUNTS_SERVICE_URL=http://accounts:5000
+    volumes:
+      - support_data:/data
+      - ./support_service/app:/app/app
+      - ./common:/app/common
+      - ./keys/jwt_public_key.pem:/app/keys/jwt_public_key.pem:ro
+    ports:
+      - "5004:5004"
+    depends_on:
+      - auth
+      - accounts
+
 volumes:
   auth_data:
   accounts_data:
+  support_data:

@@ -13,6 +13,7 @@ ACCOUNT_PERMISSIONS = [
     "accounts:create:own",
     "accounts:create:any",
     "accounts:topup",
+    "accounts:freeze:any",
 ]
 
 TRANSACTION_PERMISSIONS = [
@@ -26,14 +27,23 @@ USER_PERMISSIONS = [
     "users:edit",   # admin editing other users' profiles/roles
 ]
 
+TICKET_PERMISSIONS = [
+    "tickets:create:own",
+    "tickets:view:own",
+    "tickets:view:any",
+    "tickets:update:any",
+]
+
 ADMIN_MISC_PERMISSIONS = [
     "admin",        # used by @require_permission("admin") for admin-only actions
+    "support_agent",  # Used to identify support agents
 ]
 
 ALL_PERMISSION_CODES = (
     ACCOUNT_PERMISSIONS
     + TRANSACTION_PERMISSIONS
     + USER_PERMISSIONS
+    + TICKET_PERMISSIONS
     + ADMIN_MISC_PERMISSIONS
 )
 
@@ -49,11 +59,18 @@ ROLE_PERMISSION_MAP = {
         "transfer:internal",
         "transfer:external",
         "transactions:view:own",
+        "tickets:create:own",    # Create support tickets
+        "tickets:view:own",      # View their own tickets
     ],
     "support_agent": [
-        # Likely read access to help customers (adjust later as needed)
-        "accounts:view:any",
-        "transactions:view:any",
+        # Support agents can view all accounts and transactions
+        "accounts:view:own",     # View their own account
+        "accounts:view:any",     # View all customer accounts
+        "transactions:view:own", # View their own transactions
+        "transactions:view:any", # View all transactions
+        "tickets:view:any",      # View all support tickets
+        "tickets:update:any",    # Update ticket status and add notes
+        "support_agent",         # Support agent identifier
     ],
     "auditor": [
         # Read-only, full visibility
