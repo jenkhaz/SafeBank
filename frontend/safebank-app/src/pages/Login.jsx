@@ -82,12 +82,14 @@ const Login = () => {
         // Check if 'from' path is appropriate for user's role
         const isAdmin = user.roles?.includes('admin');
         const isSupport = user.roles?.includes('support_agent');
+        const isAuditor = user.roles?.includes('auditor');
         const isCustomer = user.roles?.includes('customer');
 
         // Only use 'from' if it matches the user's role
         const canAccessFrom = from && (
           (isAdmin && from.startsWith('/admin')) ||
           (isSupport && from.startsWith('/support')) ||
+          (isAuditor && from.startsWith('/auditor')) ||
           (isCustomer && from.startsWith('/customer'))
         );
 
@@ -97,6 +99,8 @@ const Login = () => {
           navigate('/admin', { replace: true });
         } else if (isSupport) {
           navigate('/support', { replace: true });
+        } else if (isAuditor) {
+          navigate('/auditor', { replace: true });
         } else {
           navigate('/customer', { replace: true });
         }

@@ -200,6 +200,11 @@ export const AuthProvider = ({ children }) => {
     return hasRole('customer');
   }, [hasRole]);
 
+  // Check if user is auditor
+  const isAuditor = useCallback(() => {
+    return hasRole('auditor');
+  }, [hasRole]);
+
   const value = {
     user,
     loading,
@@ -214,6 +219,7 @@ export const AuthProvider = ({ children }) => {
     isAdmin,
     isSupportAgent,
     isCustomer,
+    isAuditor,
     isAuthenticated: !!user,
   };
 

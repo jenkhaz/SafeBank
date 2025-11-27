@@ -20,6 +20,7 @@ const BASE_URLS = {
   accounts: import.meta.env.VITE_ACCOUNTS_SERVICE_URL || 'http://localhost:5002',
   admin: import.meta.env.VITE_ADMIN_SERVICE_URL || 'http://localhost:5003',
   support: import.meta.env.VITE_SUPPORT_SERVICE_URL || 'http://localhost:5004',
+  audit: import.meta.env.VITE_AUDIT_SERVICE_URL || 'http://localhost:5005',
 };
 
 /**
@@ -152,6 +153,7 @@ export const authAPI = createApiClient(BASE_URLS.auth);
 export const accountsAPI = createApiClient(BASE_URLS.accounts);
 export const adminAPI = createApiClient(BASE_URLS.admin);
 export const supportAPI = createApiClient(BASE_URLS.support);
+export const auditAPI = createApiClient(BASE_URLS.audit);
 
 // API Service Functions
 export const api = {
@@ -223,6 +225,22 @@ export const api = {
     getProfile: () => supportAPI.get('/support/profile'),
     getMyAccount: () => supportAPI.get('/support/my-account'),
     getMyTransactions: (params) => supportAPI.get('/support/my-transactions', { params }),
+  },
+
+  // Audit Service APIs
+  audit: {
+    // Audit logs
+    getAuditLogs: (params) => auditAPI.get('/audit/logs', { params }),
+    getAuditLog: (logId) => auditAPI.get(`/audit/logs/${logId}`),
+    getUserAuditTrail: (userId, params) => auditAPI.get(`/audit/logs/user/${userId}`, { params }),
+    getAuditStats: () => auditAPI.get('/audit/stats'),
+
+    // Security events
+    getSecurityEvents: (params) => auditAPI.get('/security/events', { params }),
+    getSecurityEvent: (eventId) => auditAPI.get(`/security/events/${eventId}`),
+    investigateEvent: (eventId, data) => auditAPI.put(`/security/events/${eventId}/investigate`, data),
+    getSecurityAlerts: () => auditAPI.get('/security/events/alerts'),
+    getSecurityStats: () => auditAPI.get('/security/stats'),
   },
 };
 

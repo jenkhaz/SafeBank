@@ -22,6 +22,8 @@ const Forbidden = () => {
       navigate('/admin');
     } else if (user.roles?.includes('support_agent')) {
       navigate('/support');
+    } else if (user.roles?.includes('auditor')) {
+      navigate('/auditor');
     } else {
       navigate('/customer');
     }

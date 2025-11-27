@@ -35,6 +35,11 @@ import SupportDashboard from './pages/support/SupportDashboard';
 import TicketManagement from './pages/support/TicketManagement';
 import CustomerAccounts from './pages/support/CustomerAccounts';
 
+// Auditor pages
+import AuditorDashboard from './pages/auditor/AuditorDashboard';
+import AuditLogs from './pages/auditor/AuditLogs';
+import SecurityEvents from './pages/auditor/SecurityEvents';
+
 function App() {
   return (
     <BrowserRouter>
@@ -97,6 +102,20 @@ function App() {
                   <Route index element={<SupportDashboard />} />
                   <Route path="tickets" element={<TicketManagement />} />
                   <Route path="accounts" element={<CustomerAccounts />} />
+                </Routes>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Auditor Routes */}
+          <Route
+            path="/auditor/*"
+            element={
+              <ProtectedRoute requiredRoles={['auditor']}>
+                <Routes>
+                  <Route index element={<AuditorDashboard />} />
+                  <Route path="audit-logs" element={<AuditLogs />} />
+                  <Route path="security-events" element={<SecurityEvents />} />
                 </Routes>
               </ProtectedRoute>
             }
