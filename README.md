@@ -14,9 +14,15 @@ Handles user authentication, registration, and role/permission management.
 
 ### 2. **Accounts Service** (Port 5002)
 Manages bank accounts and transactions.
-- Account creation and management
-- Transaction processing
-- Balance tracking
+- Account creation and management (checking/savings)
+- Internal transfers (between own accounts)
+- External transfers (to other users)
+- Transaction history with advanced filtering:
+  - Filter by date range
+  - Filter by transaction type (internal/external)
+  - Filter by amount range
+  - Export to PDF
+- Balance tracking and account status management
 
 ### 3. **Admin Service** (Port 5003)
 Provides administrative capabilities for managing the system.

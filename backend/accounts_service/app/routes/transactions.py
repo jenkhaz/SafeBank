@@ -17,6 +17,10 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.units import inch
 from datetime import datetime
+import requests
+import logging
+
+logger = logging.getLogger(__name__)
 
 bp = Blueprint("transactions", __name__)
 
@@ -54,6 +58,40 @@ def handle_internal_transfer():
     except (InsufficientFundsError, InvalidAccountError, AccountStatusError) as e:
         return {"msg": str(e)}, 400
 
+    # Log internal transfer to audit service
+    try:
+        requests.post("http://audit:5005/audit/log", json={
+            "service": "accounts",
+            "action": "internal_transfer",
+            "status": "success",
+            "user_id": g.user["user_id"],
+            "user_email": g.user.get("email", "unknown"),
+            "user_role": g.user.get("roles", ["unknown"])[0] if g.user.get("roles") else "unknown",
+            "resource_type": "transaction",
+            "resource_id": str(tx.id),
+            "ip_address": request.remote_addr,
+            "user_agent": request.headers.get("User-Agent", "unknown"),
+            "details": f'{{"sender_account_id": {sender_id}, "receiver_account_id": {receiver_id}, "amount": {amount}}}'
+        }, timeout=2)
+    except Exception as e:
+        logger.warning(f"Failed to log internal transfer to audit service: {e}")
+
+    # Check for suspicious transaction (large amount)
+    if amount > 10000:
+        try:
+            requests.post("http://audit:5005/security/event", json={
+                "event_type": "suspicious_transaction",
+                "severity": "high",
+                "user_id": g.user["user_id"],
+                "user_email": g.user.get("email", "unknown"),
+                "description": f"Large internal transfer of ${amount:.2f}",
+                "ip_address": request.remote_addr,
+                "user_agent": request.headers.get("User-Agent", "unknown"),
+                "details": f'{{"transaction_id": {tx.id}, "amount": {amount}, "type": "internal"}}'
+            }, timeout=2)
+        except Exception as e:
+            logger.warning(f"Failed to log suspicious transaction to audit service: {e}")
+
     return tx.to_dict(), 201
 
 
@@ -89,6 +127,40 @@ def handle_external_transfer():
         return {"msg": str(e)}, 400
     except (InsufficientFundsError, InvalidAccountError, AccountStatusError) as e:
         return {"msg": str(e)}, 400
+
+    # Log external transfer to audit service
+    try:
+        requests.post("http://audit:5005/audit/log", json={
+            "service": "accounts",
+            "action": "external_transfer",
+            "status": "success",
+            "user_id": g.user["user_id"],
+            "user_email": g.user.get("email", "unknown"),
+            "user_role": g.user.get("roles", ["unknown"])[0] if g.user.get("roles") else "unknown",
+            "resource_type": "transaction",
+            "resource_id": str(tx.id),
+            "ip_address": request.remote_addr,
+            "user_agent": request.headers.get("User-Agent", "unknown"),
+            "details": f'{{"sender_account_id": {sender_id}, "receiver_account_number": "{receiver_acc_number}", "amount": {amount}}}'
+        }, timeout=2)
+    except Exception as e:
+        logger.warning(f"Failed to log external transfer to audit service: {e}")
+
+    # Check for suspicious external transaction (high amount or potential risk)
+    if amount > 5000:
+        try:
+            requests.post("http://audit:5005/security/event", json={
+                "event_type": "suspicious_transaction",
+                "severity": "critical" if amount > 50000 else "high",
+                "user_id": g.user["user_id"],
+                "user_email": g.user.get("email", "unknown"),
+                "description": f"Large external transfer of ${amount:.2f} to {receiver_acc_number}",
+                "ip_address": request.remote_addr,
+                "user_agent": request.headers.get("User-Agent", "unknown"),
+                "details": f'{{"transaction_id": {tx.id}, "amount": {amount}, "type": "external", "receiver": "{receiver_acc_number}"}}'
+            }, timeout=2)
+        except Exception as e:
+            logger.warning(f"Failed to log suspicious transaction to audit service: {e}")
 
     return tx.to_dict(), 201
 
@@ -190,7 +262,7 @@ def export_transactions_pdf():
             query = query.filter(Transaction.timestamp >= start_dt) # type: ignore
         except ValueError:
             return {"msg": "Invalid start_date format"}, 400
-        
+
     if end_date:
         try:
             end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
@@ -408,6 +480,24 @@ def deposit_to_own_account():
     db.session.add(tx)
     db.session.commit()
 
+    # Log deposit to audit service
+    try:
+        requests.post("http://audit:5005/audit/log", json={
+            "service": "accounts",
+            "action": "deposit",
+            "status": "success",
+            "user_id": user_id,
+            "user_email": g.user.get("email", "unknown"),
+            "user_role": g.user.get("roles", ["unknown"])[0] if g.user.get("roles") else "unknown",
+            "resource_type": "transaction",
+            "resource_id": str(tx.id),
+            "ip_address": request.remote_addr,
+            "user_agent": request.headers.get("User-Agent", "unknown"),
+            "details": f'{{"account_id": {account_id}, "amount": {float(amount_decimal)}, "previous_balance": {float(old_balance)}, "new_balance": {float(account.balance)}}}'
+        }, timeout=2)
+    except Exception as e:
+        logger.warning(f"Failed to log deposit to audit service: {e}")
+
     return {
         "msg": "Deposit successful",
         "account": account.to_dict(),
@@ -467,6 +557,24 @@ def withdraw_from_own_account():
     db.session.add(tx)
     db.session.commit()
 
+    # Log withdrawal to audit service
+    try:
+        requests.post("http://audit:5005/audit/log", json={
+            "service": "accounts",
+            "action": "withdrawal",
+            "status": "success",
+            "user_id": user_id,
+            "user_email": g.user.get("email", "unknown"),
+            "user_role": g.user.get("roles", ["unknown"])[0] if g.user.get("roles") else "unknown",
+            "resource_type": "transaction",
+            "resource_id": str(tx.id),
+            "ip_address": request.remote_addr,
+            "user_agent": request.headers.get("User-Agent", "unknown"),
+            "details": f'{{"account_id": {account_id}, "amount": {float(amount_decimal)}, "previous_balance": {float(old_balance)}, "new_balance": {float(account.balance)}}}'
+        }, timeout=2)
+    except Exception as e:
+        logger.warning(f"Failed to log withdrawal to audit service: {e}")
+
     return {
         "msg": "Withdrawal successful",
         "account": account.to_dict(),
@@ -523,5 +631,24 @@ def admin_change_account_freeze_status():
         account.status = "Active"
 
     db.session.commit()
+
+    # Log account freeze/unfreeze to audit service
+    action = "freeze_account" if freeze else "unfreeze_account"
+    try:
+        requests.post("http://audit:5005/audit/log", json={
+            "service": "accounts",
+            "action": action,
+            "status": "success",
+            "user_id": g.user["user_id"],
+            "user_email": g.user.get("email", "unknown"),
+            "user_role": "admin",
+            "resource_type": "account",
+            "resource_id": str(account_id),
+            "ip_address": request.remote_addr,
+            "user_agent": request.headers.get("User-Agent", "unknown"),
+            "details": f'{{"account_id": {account_id}, "new_status": "{account.status}", "account_owner": {account.user_id}}}'
+        }, timeout=2)
+    except Exception as e:
+        logger.warning(f"Failed to log account {action} to audit service: {e}")
 
     return account.to_dict(), 200
