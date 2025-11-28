@@ -100,7 +100,7 @@ def register():
 
 
 @auth_bp.post("/login")
-@limiter.limit("5 per 15 minutes")
+@limiter.limit("20 per 15 minutes")
 def login():
     data = request.get_json() or {}
     email = data.get("email")

@@ -1,6 +1,19 @@
 version: '3.9'
 
 services:
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: nginx_gateway
+    depends_on:
+      - auth
+      - accounts
+      - admin
+      - support
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/nginx.conf:ro
+
   auth:
     build:
       context: .
