@@ -1,6 +1,23 @@
 import jwt
 from flask import request, jsonify, g, current_app
 import os
+import json
+
+
+def sanitize_log_data(data):
+    """
+    Sanitize data for logging to prevent log injection attacks.
+    Converts any data structure to a safe JSON string.
+    """
+    if isinstance(data, str):
+        # Already a string, just ensure it's JSON-safe
+        return json.dumps(data)
+    elif isinstance(data, dict):
+        # Convert dict to JSON string
+        return json.dumps(data)
+    else:
+        # Convert any other type to JSON string
+        return json.dumps(str(data))
 
 
 def load_public_key():

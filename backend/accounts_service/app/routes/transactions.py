@@ -19,6 +19,7 @@ from reportlab.lib.units import inch
 from datetime import datetime
 import requests
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +55,76 @@ def handle_internal_transfer():
             description=description,
         )
     except ValueError as e:
+        # Log failed transfer attempt to audit service
+        try:
+            requests.post("http://audit:5005/audit/log", json={
+                "service": "accounts",
+                "action": "internal_transfer",
+                "status": "failure",
+                "severity": "warning",
+                "user_id": g.user["user_id"],
+                "user_email": g.user.get("email", "unknown"),
+                "user_role": g.user.get("roles", ["unknown"])[0] if g.user.get("roles") else "unknown",
+                "resource_type": "transaction",
+                "ip_address": request.remote_addr,
+                "user_agent": request.headers.get("User-Agent", "unknown"),
+                "details": json.dumps({"sender_account_id": sender_id, "receiver_account_id": receiver_id, "amount": amount, "error": str(e)})
+            }, timeout=2)
+        except Exception as log_error:
+            logger.warning(f"Failed to log failed transfer to audit service: {log_error}")
         return {"msg": str(e)}, 400
     except (InsufficientFundsError, InvalidAccountError, AccountStatusError) as e:
+        # Log failed transfer attempt to audit service
+        severity = "high" if isinstance(e, InvalidAccountError) else "warning"
+        try:
+            requests.post("http://audit:5005/audit/log", json={
+                "service": "accounts",
+                "action": "internal_transfer",
+                "status": "failure",
+                "severity": severity,
+                "user_id": g.user["user_id"],
+                "user_email": g.user.get("email", "unknown"),
+                "user_role": g.user.get("roles", ["unknown"])[0] if g.user.get("roles") else "unknown",
+                "resource_type": "transaction",
+                "ip_address": request.remote_addr,
+                "user_agent": request.headers.get("User-Agent", "unknown"),
+                "details": json.dumps({"sender_account_id": sender_id, "receiver_account_id": receiver_id, "amount": amount, "error": str(e), "error_type": type(e).__name__})
+            }, timeout=2)
+        except Exception as log_error:
+            logger.warning(f"Failed to log failed transfer to audit service: {log_error}")
+        
+        # Create security event for high-risk failures
+        if isinstance(e, InvalidAccountError):
+            # Attempt to access non-existent account (reconnaissance/fraud)
+            try:
+                requests.post("http://audit:5005/security/event", json={
+                    "event_type": "invalid_account_access",
+                    "severity": "high",
+                    "user_id": g.user["user_id"],
+                    "user_email": g.user.get("email", "unknown"),
+                    "description": f"Attempted internal transfer to/from non-existent account",
+                    "ip_address": request.remote_addr,
+                    "user_agent": request.headers.get("User-Agent", "unknown"),
+                    "details": json.dumps({"sender_account_id": sender_id, "receiver_account_id": receiver_id, "amount": amount, "error": str(e)})
+                }, timeout=2)
+            except Exception as log_error:
+                logger.warning(f"Failed to log security event: {log_error}")
+        elif isinstance(e, AccountStatusError):
+            # Attempt to use frozen/closed account
+            try:
+                requests.post("http://audit:5005/security/event", json={
+                    "event_type": "frozen_account_access",
+                    "severity": "medium",
+                    "user_id": g.user["user_id"],
+                    "user_email": g.user.get("email", "unknown"),
+                    "description": f"Attempted transfer using frozen/closed account",
+                    "ip_address": request.remote_addr,
+                    "user_agent": request.headers.get("User-Agent", "unknown"),
+                    "details": json.dumps({"sender_account_id": sender_id, "receiver_account_id": receiver_id, "amount": amount, "error": str(e)})
+                }, timeout=2)
+            except Exception as log_error:
+                logger.warning(f"Failed to log security event: {log_error}")
+        
         return {"msg": str(e)}, 400
 
     # Log internal transfer to audit service
@@ -124,8 +193,76 @@ def handle_external_transfer():
             description=description,
         )
     except ValueError as e:
+        # Log failed transfer attempt to audit service
+        try:
+            requests.post("http://audit:5005/audit/log", json={
+                "service": "accounts",
+                "action": "external_transfer",
+                "status": "failure",
+                "severity": "warning",
+                "user_id": g.user["user_id"],
+                "user_email": g.user.get("email", "unknown"),
+                "user_role": g.user.get("roles", ["unknown"])[0] if g.user.get("roles") else "unknown",
+                "resource_type": "transaction",
+                "ip_address": request.remote_addr,
+                "user_agent": request.headers.get("User-Agent", "unknown"),
+                "details": json.dumps({"sender_account_id": sender_id, "receiver_account_number": receiver_acc_number, "amount": amount, "error": str(e)})
+            }, timeout=2)
+        except Exception as log_error:
+            logger.warning(f"Failed to log failed transfer to audit service: {log_error}")
         return {"msg": str(e)}, 400
     except (InsufficientFundsError, InvalidAccountError, AccountStatusError) as e:
+        # Log failed transfer attempt to audit service
+        severity = "high" if isinstance(e, InvalidAccountError) else "warning"
+        try:
+            requests.post("http://audit:5005/audit/log", json={
+                "service": "accounts",
+                "action": "external_transfer",
+                "status": "failure",
+                "severity": severity,
+                "user_id": g.user["user_id"],
+                "user_email": g.user.get("email", "unknown"),
+                "user_role": g.user.get("roles", ["unknown"])[0] if g.user.get("roles") else "unknown",
+                "resource_type": "transaction",
+                "ip_address": request.remote_addr,
+                "user_agent": request.headers.get("User-Agent", "unknown"),
+                "details": json.dumps({"sender_account_id": sender_id, "receiver_account_number": receiver_acc_number, "amount": amount, "error": str(e), "error_type": type(e).__name__})
+            }, timeout=2)
+        except Exception as log_error:
+            logger.warning(f"Failed to log failed transfer to audit service: {log_error}")
+        
+        # Create security event for high-risk failures
+        if isinstance(e, InvalidAccountError):
+            # Attempt to transfer from non-existent account or to invalid external account
+            try:
+                requests.post("http://audit:5005/security/event", json={
+                    "event_type": "invalid_account_access",
+                    "severity": "high",
+                    "user_id": g.user["user_id"],
+                    "user_email": g.user.get("email", "unknown"),
+                    "description": f"Attempted external transfer to/from invalid account: {receiver_acc_number}",
+                    "ip_address": request.remote_addr,
+                    "user_agent": request.headers.get("User-Agent", "unknown"),
+                    "details": json.dumps({"sender_account_id": sender_id, "receiver_account_number": receiver_acc_number, "amount": amount, "error": str(e)})
+                }, timeout=2)
+            except Exception as log_error:
+                logger.warning(f"Failed to log security event: {log_error}")
+        elif isinstance(e, AccountStatusError):
+            # Attempt to use frozen/closed account for external transfer
+            try:
+                requests.post("http://audit:5005/security/event", json={
+                    "event_type": "frozen_account_access",
+                    "severity": "medium",
+                    "user_id": g.user["user_id"],
+                    "user_email": g.user.get("email", "unknown"),
+                    "description": f"Attempted external transfer using frozen/closed account",
+                    "ip_address": request.remote_addr,
+                    "user_agent": request.headers.get("User-Agent", "unknown"),
+                    "details": json.dumps({"sender_account_id": sender_id, "receiver_account_number": receiver_acc_number, "amount": amount, "error": str(e)})
+                }, timeout=2)
+            except Exception as log_error:
+                logger.warning(f"Failed to log security event: {log_error}")
+        
         return {"msg": str(e)}, 400
 
     # Log external transfer to audit service

@@ -6,6 +6,7 @@ from ..security.rbac import require_permission
 import uuid
 import requests
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ def create_account():
             "resource_id": str(new.id),
             "ip_address": request.remote_addr,
             "user_agent": request.headers.get("User-Agent", "unknown"),
-            "details": f'{{"account_type": "{acc_type}", "account_number": "{new.account_number}"}}'
+            "details": json.dumps({"account_type": acc_type, "account_number": new.account_number})
         }, timeout=2)
     except Exception as e:
         logger.warning(f"Failed to log account creation to audit service: {e}")
@@ -97,7 +98,7 @@ def admin_create_account():
             "resource_id": str(new.id),
             "ip_address": request.remote_addr,
             "user_agent": request.headers.get("User-Agent", "unknown"),
-            "details": f'{{"target_user_id": {user_id}, "account_type": "{acc_type}", "account_number": "{new.account_number}"}}'
+            "details": json.dumps({"target_user_id": user_id, "account_type": acc_type, "account_number": new.account_number})
         }, timeout=2)
     except Exception as e:
         logger.warning(f"Failed to log admin account creation to audit service: {e}")
