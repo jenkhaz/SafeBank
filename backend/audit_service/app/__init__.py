@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_cors import CORS
 from .config import Config
 from .extensions import db, limiter
 
@@ -6,6 +7,9 @@ from .extensions import db, limiter
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    # Enable CORS for all routes
+    CORS(app, resources={r"/*": {"origins": "*"}})
 
     db.init_app(app)
     limiter.init_app(app)
