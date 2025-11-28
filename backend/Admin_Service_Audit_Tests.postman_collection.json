@@ -1,0 +1,1164 @@
+{
+	"info": {
+		"_postman_id": "admin-audit-integration-tests",
+		"name": "Admin Service - Audit Integration Tests",
+		"description": "Comprehensive test collection for Admin service audit logging and admin access to audit logs/security events",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "0. Setup - Authentication",
+			"item": [
+				{
+					"name": "Register Customer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"customer_id\", jsonData.user.id);",
+									"    pm.environment.set(\"customer_email\", jsonData.user.email);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"testcustomer@example.com\",\n    \"full_name\": \"Test Customer\",\n    \"phone\": \"1234567890\",\n    \"password\": \"Customer@2024!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5001/auth/register",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5001",
+							"path": [
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login as Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"admin_token\", jsonData.access_token);",
+									"    pm.environment.set(\"admin_id\", jsonData.user.id);",
+									"    pm.environment.set(\"admin_email\", jsonData.user.email);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"Admin@2024!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5001/auth/login",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5001",
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login as Auditor",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"auditor_token\", jsonData.access_token);",
+									"    pm.environment.set(\"auditor_id\", jsonData.user.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"auditor@example.com\",\n    \"password\": \"Auditor@2024!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5001/auth/login",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5001",
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login as auditor (if exists, otherwise create one first)"
+					},
+					"response": []
+				}
+			],
+			"description": "Setup: Register users and get authentication tokens"
+		},
+		{
+			"name": "1. Admin Operations (Success - Will Log)",
+			"item": [
+				{
+					"name": "Admin Change Own Credentials (Success)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"Admin@2024!Updated\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5003/admin/change-credentials",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"change-credentials"
+							]
+						},
+						"description": "Admin changes own credentials - SHOULD LOG TO AUDIT"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin Edit User Profile (Success)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": {{customer_id}},\n    \"full_name\": \"Test Customer Updated\",\n    \"phone\": \"9876543210\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5003/admin/users/edit",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"users",
+								"edit"
+							]
+						},
+						"description": "Admin edits customer profile - SHOULD LOG TO AUDIT"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin Create Support Agent (Success)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"support_agent_id\", jsonData.user.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"support.agent@example.com\",\n    \"full_name\": \"Support Agent Test\",\n    \"phone\": \"5551234567\",\n    \"password\": \"Support@2024!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5003/admin/users/create-support-agent",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"users",
+								"create-support-agent"
+							]
+						},
+						"description": "Admin creates support agent - SHOULD LOG TO AUDIT"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin Create Auditor (Success)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"new_auditor_id\", jsonData.user.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"new.auditor@example.com\",\n    \"full_name\": \"New Auditor Test\",\n    \"phone\": \"5559876543\",\n    \"password\": \"Auditor@2024!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5003/admin/users/create-auditor",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"users",
+								"create-auditor"
+							]
+						},
+						"description": "Admin creates auditor - SHOULD LOG TO AUDIT"
+					},
+					"response": []
+				}
+			],
+			"description": "Test successful admin operations - all should be logged to audit service"
+		},
+		{
+			"name": "2. Admin Operations (Failures - Should Log)",
+			"item": [
+				{
+					"name": "Admin Edit Non-Existent User (Failure)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": 999999,\n    \"full_name\": \"Non Existent User\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5003/admin/users/edit",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"users",
+								"edit"
+							]
+						},
+						"description": "Try to edit non-existent user - SHOULD LOG FAILURE + SECURITY EVENT"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin Create Duplicate Support Agent (Failure)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"support.agent@example.com\",\n    \"full_name\": \"Duplicate Agent\",\n    \"phone\": \"5551234567\",\n    \"password\": \"Support@2024!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5003/admin/users/create-support-agent",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"users",
+								"create-support-agent"
+							]
+						},
+						"description": "Try to create duplicate support agent - SHOULD LOG FAILURE + SECURITY EVENT"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin Create Auditor with Weak Password (Failure)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"weak.auditor@example.com\",\n    \"full_name\": \"Weak Password Auditor\",\n    \"phone\": \"5559999999\",\n    \"password\": \"weak\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5003/admin/users/create-auditor",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"users",
+								"create-auditor"
+							]
+						},
+						"description": "Try to create auditor with weak password - SHOULD LOG FAILURE + SECURITY EVENT"
+					},
+					"response": []
+				}
+			],
+			"description": "Test failed admin operations - all failures should be logged to audit service with security events"
+		},
+		{
+			"name": "3. Admin Access to Audit Logs",
+			"item": [
+				{
+					"name": "Admin View All Audit Logs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5003/admin/audit/logs?limit=50",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"audit",
+								"logs"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "50"
+								}
+							]
+						},
+						"description": "Admin views all audit logs"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin View Audit Logs - Filter by Service (admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5003/admin/audit/logs?service=admin&limit=20",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"audit",
+								"logs"
+							],
+							"query": [
+								{
+									"key": "service",
+									"value": "admin"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Admin views only admin service logs"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin View Audit Logs - Filter by Action",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5003/admin/audit/logs?action=admin_create_support_agent",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"audit",
+								"logs"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "admin_create_support_agent"
+								}
+							]
+						},
+						"description": "Admin views logs for specific action"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin View Audit Logs - Filter by Status (failure)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5003/admin/audit/logs?status=failure&limit=20",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"audit",
+								"logs"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "failure"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Admin views all failed operations"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin View User Audit Trail",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5003/admin/audit/logs/user/{{customer_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"audit",
+								"logs",
+								"user",
+								"{{customer_id}}"
+							]
+						},
+						"description": "Admin views complete audit trail for specific user"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin View Audit Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5003/admin/audit/stats",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"audit",
+								"stats"
+							]
+						},
+						"description": "Admin views audit statistics"
+					},
+					"response": []
+				}
+			],
+			"description": "Test admin access to audit logs through admin service"
+		},
+		{
+			"name": "4. Admin Access to Security Events",
+			"item": [
+				{
+					"name": "Admin View All Security Events",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5003/admin/security/events?limit=50",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"security",
+								"events"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "50"
+								}
+							]
+						},
+						"description": "Admin views all security events"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin View Security Events - Filter by Type",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5003/admin/security/events?event_type=failed_admin_operation",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"security",
+								"events"
+							],
+							"query": [
+								{
+									"key": "event_type",
+									"value": "failed_admin_operation"
+								}
+							]
+						},
+						"description": "Admin views failed admin operation events"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin View Security Events - Filter by Severity",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5003/admin/security/events?severity=high",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"security",
+								"events"
+							],
+							"query": [
+								{
+									"key": "severity",
+									"value": "high"
+								}
+							]
+						},
+						"description": "Admin views high severity events"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin View Uninvestigated Security Alerts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5003/admin/security/alerts",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"security",
+								"alerts"
+							]
+						},
+						"description": "Admin views uninvestigated high/critical security events"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin Investigate Security Event",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"resolution_notes\": \"Investigated by admin - False alarm, user error. No malicious activity detected.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5003/admin/security/events/1/investigate",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"security",
+								"events",
+								"1",
+								"investigate"
+							]
+						},
+						"description": "Admin marks security event as investigated (replace event ID with real one)"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin View Security Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5003/admin/security/stats",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"security",
+								"stats"
+							]
+						},
+						"description": "Admin views security event statistics"
+					},
+					"response": []
+				}
+			],
+			"description": "Test admin access to security events through admin service"
+		},
+		{
+			"name": "5. Direct Audit Service Access (Compare)",
+			"item": [
+				{
+					"name": "Direct: View Audit Logs (Admin Token)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5005/audit/logs?service=admin&limit=20",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5005",
+							"path": [
+								"audit",
+								"logs"
+							],
+							"query": [
+								{
+									"key": "service",
+									"value": "admin"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Direct access to audit service - admin should have permission"
+					},
+					"response": []
+				},
+				{
+					"name": "Direct: View Security Events (Admin Token)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5005/security/events?event_type=failed_admin_operation",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5005",
+							"path": [
+								"security",
+								"events"
+							],
+							"query": [
+								{
+									"key": "event_type",
+									"value": "failed_admin_operation"
+								}
+							]
+						},
+						"description": "Direct access to audit service - admin should have permission"
+					},
+					"response": []
+				},
+				{
+					"name": "Direct: View Audit Logs (Auditor Token)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auditor_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5005/audit/logs?service=admin&limit=20",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5005",
+							"path": [
+								"audit",
+								"logs"
+							],
+							"query": [
+								{
+									"key": "service",
+									"value": "admin"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Direct access to audit service - auditor should have permission"
+					},
+					"response": []
+				}
+			],
+			"description": "Compare direct audit service access vs through admin service"
+		},
+		{
+			"name": "6. Verify Logging Worked",
+			"item": [
+				{
+					"name": "Check Admin Actions Were Logged",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5003/admin/audit/logs?service=admin&user_id={{admin_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"audit",
+								"logs"
+							],
+							"query": [
+								{
+									"key": "service",
+									"value": "admin"
+								},
+								{
+									"key": "user_id",
+									"value": "{{admin_id}}"
+								}
+							]
+						},
+						"description": "Verify all admin operations were logged"
+					},
+					"response": []
+				},
+				{
+					"name": "Check Failed Operations Generated Security Events",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5003/admin/security/events?event_type=failed_admin_operation&user_id={{admin_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"security",
+								"events"
+							],
+							"query": [
+								{
+									"key": "event_type",
+									"value": "failed_admin_operation"
+								},
+								{
+									"key": "user_id",
+									"value": "{{admin_id}}"
+								}
+							]
+						},
+						"description": "Verify failed operations created security events"
+					},
+					"response": []
+				},
+				{
+					"name": "Check Support Agent Creation Logged",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5003/admin/audit/logs?action=admin_create_support_agent",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"audit",
+								"logs"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "admin_create_support_agent"
+								}
+							]
+						},
+						"description": "Verify support agent creation was logged"
+					},
+					"response": []
+				},
+				{
+					"name": "Check Auditor Creation Logged",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5003/admin/audit/logs?action=admin_create_auditor",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"admin",
+								"audit",
+								"logs"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "admin_create_auditor"
+								}
+							]
+						},
+						"description": "Verify auditor creation was logged"
+					},
+					"response": []
+				}
+			],
+			"description": "Verify all operations were properly logged to audit service"
+		}
+	],
+	"variable": [
+		{
+			"key": "admin_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "auditor_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "admin_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "auditor_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "customer_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "customer_email",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "support_agent_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "new_auditor_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

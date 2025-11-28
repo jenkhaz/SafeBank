@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import jwt
 import re
 import logging
+import requests
 
 from ..extensions import db, limiter
 from ..models import User, Role, Permission
@@ -79,11 +80,27 @@ def register():
     db.session.add(user)
     db.session.commit()
 
+    # Log registration to audit service
+    try:
+        requests.post("http://audit:5005/audit/log", json={
+            "service": "auth",
+            "action": "register",
+            "status": "success",
+            "user_id": user.id,
+            "user_email": user.email,
+            "user_role": role_name,
+            "ip_address": request.remote_addr,
+            "user_agent": request.headers.get("User-Agent", "unknown"),
+            "details": f'{{"role": "{role_name}"}}'
+        }, timeout=2)
+    except Exception as e:
+        logger.warning(f"Failed to log registration to audit service: {e}")
+
     return jsonify({"user": user.to_dict_basic()}), 201
 
 
 @auth_bp.post("/login")
-@limiter.limit("5 per 15 minutes")
+@limiter.limit("20 per 15 minutes")
 def login():
     data = request.get_json() or {}
     email = data.get("email")
@@ -94,6 +111,19 @@ def login():
 
     user = User.query.filter_by(email=email).first()
     if not user or not verify_password(password, user.password_hash):
+        # Log failed login as security event
+        try:
+            requests.post("http://audit:5005/security/event", json={
+                "event_type": "failed_login",
+                "severity": "medium",
+                "user_email": email,
+                "description": "Failed login attempt - invalid credentials",
+                "ip_address": request.remote_addr,
+                "user_agent": request.headers.get("User-Agent", "unknown"),
+                "details": f'{{"reason": "invalid_credentials"}}'
+            }, timeout=2)
+        except Exception as e:
+            logger.warning(f"Failed to log security event to audit service: {e}")
         return jsonify({"msg": "Invalid credentials"}), 401
 
     if not user.is_active:
@@ -124,6 +154,22 @@ def login():
     }
 
     token = create_jwt(payload)
+
+    # Log successful login to audit service
+    try:
+        requests.post("http://audit:5005/audit/log", json={
+            "service": "auth",
+            "action": "login",
+            "status": "success",
+            "user_id": user.id,
+            "user_email": user.email,
+            "user_role": roles[0] if roles else "unknown",
+            "ip_address": request.remote_addr,
+            "user_agent": request.headers.get("User-Agent", "unknown"),
+            "details": f'{{"method": "password"}}'
+        }, timeout=2)
+    except Exception as e:
+        logger.warning(f"Failed to log login to audit service: {e}")
 
     return jsonify({"access_token": token, "user": user.to_dict_basic()}), 200
 
@@ -180,6 +226,21 @@ def force_password_change():
 
     logger.info(f"User user_id={user.id} completed forced password change")
 
+    # Log password change to audit service
+    try:
+        requests.post("http://audit:5005/audit/log", json={
+            "service": "auth",
+            "action": "force_password_change",
+            "status": "success",
+            "user_id": user.id,
+            "user_email": user.email,
+            "ip_address": request.remote_addr,
+            "user_agent": request.headers.get("User-Agent", "unknown"),
+            "details": '{"type": "forced_change"}'
+        }, timeout=2)
+    except Exception as e:
+        logger.warning(f"Failed to log password change to audit service: {e}")
+
     return jsonify({"msg": "Password changed successfully. You can now login with your new password."}), 200
 
 
@@ -220,6 +281,22 @@ def admin_change_username_password():
         logger.info(f"Admin user_id={user_id} changed password")
     
     db.session.commit()
+
+    # Log admin credential change to audit service
+    try:
+        requests.post("http://audit:5005/audit/log", json={
+            "service": "auth",
+            "action": "admin_change_credentials",
+            "status": "success",
+            "user_id": user_id,
+            "user_email": user.email,
+            "user_role": "admin",
+            "ip_address": request.remote_addr,
+            "user_agent": request.headers.get("User-Agent", "unknown"),
+            "details": f'{{"changed_email": {"true" if new_email else "false"}, "changed_password": {"true" if new_password else "false"}}}'
+        }, timeout=2)
+    except Exception as e:
+        logger.warning(f"Failed to log admin credential change to audit service: {e}")
 
     return jsonify({"msg": "admin credentials updated, please login using the new credentials"}), 200
 
@@ -286,6 +363,25 @@ def admin_edit_user_roles():
     
     # Audit log
     logger.info(f"Admin user_id={admin_id} edited user_id={user_id}: {', '.join(changes)}")
+    
+    # Log user profile edit to audit service
+    try:
+        changes_str = ", ".join(changes)
+        requests.post("http://audit:5005/audit/log", json={
+            "service": "auth",
+            "action": "admin_edit_user_profile",
+            "status": "success",
+            "user_id": admin_id,
+            "user_email": g.user.get("email", "unknown"),
+            "user_role": "admin",
+            "resource_type": "user",
+            "resource_id": str(user_id),
+            "ip_address": request.remote_addr,
+            "user_agent": request.headers.get("User-Agent", "unknown"),
+            "details": f'{{"changes": "{changes_str}"}}'
+        }, timeout=2)
+    except Exception as e:
+        logger.warning(f"Failed to log user profile edit to audit service: {e}")
     
     return jsonify({"msg": "User profile updated", "user": user.to_dict_basic()}), 200
 

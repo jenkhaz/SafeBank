@@ -34,6 +34,11 @@ TICKET_PERMISSIONS = [
     "tickets:update:any",
 ]
 
+AUDIT_PERMISSIONS = [
+    "audit:view",        # View audit logs and security events
+    "audit:investigate", # Mark security events as investigated
+]
+
 ADMIN_MISC_PERMISSIONS = [
     "admin",        # used by @require_permission("admin") for admin-only actions
     "support_agent",  # Used to identify support agents
@@ -44,6 +49,7 @@ ALL_PERMISSION_CODES = (
     + TRANSACTION_PERMISSIONS
     + USER_PERMISSIONS
     + TICKET_PERMISSIONS
+    + AUDIT_PERMISSIONS
     + ADMIN_MISC_PERMISSIONS
 )
 
@@ -73,9 +79,12 @@ ROLE_PERMISSION_MAP = {
         "support_agent",         # Support agent identifier
     ],
     "auditor": [
-        # Read-only, full visibility
+        # Read-only, full visibility including audit logs
         "accounts:view:any",
         "transactions:view:any",
+        "tickets:view:any",
+        "audit:view",
+        "audit:investigate",
     ],
     "admin": [
         # Admin gets everything

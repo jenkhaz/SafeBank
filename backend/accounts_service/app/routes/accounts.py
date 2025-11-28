@@ -4,6 +4,11 @@ from ..models.account import Account
 from ..extensions import db, limiter
 from ..security.rbac import require_permission
 import uuid
+import requests
+import logging
+import json
+
+logger = logging.getLogger(__name__)
 
 accounts_bp = Blueprint("accounts", __name__)
 
@@ -35,6 +40,25 @@ def create_account():
 
     db.session.add(new)
     db.session.commit()
+
+    # Log account creation to audit service
+    try:
+        requests.post("http://audit:5005/audit/log", json={
+            "service": "accounts",
+            "action": "create_account",
+            "status": "success",
+            "user_id": g.user["user_id"],
+            "user_email": g.user.get("email", "unknown"),
+            "user_role": g.user.get("roles", ["unknown"])[0] if g.user.get("roles") else "unknown",
+            "resource_type": "account",
+            "resource_id": str(new.id),
+            "ip_address": request.remote_addr,
+            "user_agent": request.headers.get("User-Agent", "unknown"),
+            "details": json.dumps({"account_type": acc_type, "account_number": new.account_number})
+        }, timeout=2)
+    except Exception as e:
+        logger.warning(f"Failed to log account creation to audit service: {e}")
+
     return new.to_dict(), 201
 
 @accounts_bp.post("/admin/create")
@@ -60,6 +84,25 @@ def admin_create_account():
 
     db.session.add(new)
     db.session.commit()
+
+    # Log admin account creation to audit service
+    try:
+        requests.post("http://audit:5005/audit/log", json={
+            "service": "accounts",
+            "action": "admin_create_account",
+            "status": "success",
+            "user_id": g.user["user_id"],
+            "user_email": g.user.get("email", "unknown"),
+            "user_role": "admin",
+            "resource_type": "account",
+            "resource_id": str(new.id),
+            "ip_address": request.remote_addr,
+            "user_agent": request.headers.get("User-Agent", "unknown"),
+            "details": json.dumps({"target_user_id": user_id, "account_type": acc_type, "account_number": new.account_number})
+        }, timeout=2)
+    except Exception as e:
+        logger.warning(f"Failed to log admin account creation to audit service: {e}")
+
     return new.to_dict(), 201
 
 @accounts_bp.get("/admin/all")

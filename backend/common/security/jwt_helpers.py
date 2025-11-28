@@ -1,6 +1,23 @@
 import jwt
 from flask import request, jsonify, g, current_app
 import os
+import json
+
+
+def sanitize_log_data(data):
+    """
+    Sanitize data for logging to prevent log injection attacks.
+    Converts any data structure to a safe JSON string.
+    """
+    if isinstance(data, str):
+        # Already a string, just ensure it's JSON-safe
+        return json.dumps(data)
+    elif isinstance(data, dict):
+        # Convert dict to JSON string
+        return json.dumps(data)
+    else:
+        # Convert any other type to JSON string
+        return json.dumps(str(data))
 
 
 def load_public_key():
@@ -33,6 +50,8 @@ def decode_jwt():
 
     try:
         public_key = load_public_key()
+        # print(f"[JWT DEBUG] Public key loaded, length: {len(public_key)}")
+        # print(f"[JWT DEBUG] Token preview: {token[:50]}...")
         payload = jwt.decode(
             token,
             public_key,
@@ -40,12 +59,18 @@ def decode_jwt():
             audience="safe_bank",
             issuer="auth_service",
         )
+        # print(f"[JWT DEBUG] Token decoded successfully: user_id={payload.get('user_id')}")
         return payload
-    except jwt.ExpiredSignatureError:
+    except jwt.ExpiredSignatureError as e:
+        print(f"JWT token has expired: {e}")
         return None
-    except jwt.InvalidTokenError:
+    except jwt.InvalidTokenError as e:
+        print(f"Invalid JWT token: {type(e).__name__}: {e}")
         return None
-    except Exception:
+    except Exception as e:
+        print(f"Unexpected error decoding JWT: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 

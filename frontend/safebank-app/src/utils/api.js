@@ -16,11 +16,11 @@ import { sanitizeObject } from './sanitize';
 
 // Base URLs for different services
 const BASE_URLS = {
-  auth: import.meta.env.VITE_AUTH_SERVICE_URL || 'http://localhost:5001',
-  accounts: import.meta.env.VITE_ACCOUNTS_SERVICE_URL || 'http://localhost:5002',
-  admin: import.meta.env.VITE_ADMIN_SERVICE_URL || 'http://localhost:5003',
-  support: import.meta.env.VITE_SUPPORT_SERVICE_URL || 'http://localhost:5004',
-  audit: import.meta.env.VITE_AUDIT_SERVICE_URL || 'http://localhost:5005',
+  auth: import.meta.env.VITE_AUTH_SERVICE_URL || 'http://localhost',
+  accounts: import.meta.env.VITE_ACCOUNTS_SERVICE_URL || 'http://localhost',
+  admin: import.meta.env.VITE_ADMIN_SERVICE_URL || 'http://localhost',
+  support: import.meta.env.VITE_SUPPORT_SERVICE_URL || 'http://localhost',
+  audit: import.meta.env.VITE_AUDIT_SERVICE_URL || 'http://localhost',
 };
 
 /**
