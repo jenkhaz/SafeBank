@@ -9,8 +9,9 @@ services:
       - accounts
       - admin
       - support
+      - audit
     ports:
-      - "80:80"
+      - "8080:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/nginx.conf:ro
 

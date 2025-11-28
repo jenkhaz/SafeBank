@@ -11,7 +11,7 @@ COPY audit_service/app ./app
 COPY audit_service/entrypoint.sh .
 COPY common ./common
 
-# Make entrypoint executable
-RUN chmod +x entrypoint.sh
+# Fix line endings and make entrypoint executable
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 
 CMD ["./entrypoint.sh"]

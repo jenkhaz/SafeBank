@@ -3,17 +3,30 @@
  * Main dashboard for admin users with quick actions
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
 import api from '../../utils/api';
 import { validatePassword } from '../../utils/validators';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import SuccessMessage from '../../components/common/SuccessMessage';
-import { KeyIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import {
+  KeyIcon,
+  XMarkIcon,
+  UsersIcon,
+  BanknotesIcon,
+  ShieldCheckIcon,
+  DocumentTextIcon,
+  ChartBarIcon,
+  ArrowRightIcon,
+} from '@heroicons/react/24/outline';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [recentLogs, setRecentLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Change password modal
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -22,6 +35,22 @@ const AdminDashboard = () => {
     new_password: '',
     confirm_password: '',
   });
+
+  // Fetch recent audit logs
+  useEffect(() => {
+    const fetchRecentLogs = async () => {
+      try {
+        const response = await api.audit.getAuditLogs({ limit: 5 });
+        setRecentLogs(response.data.logs || []);
+      } catch (err) {
+        console.error('Failed to fetch audit logs:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecentLogs();
+  }, []);
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -82,15 +111,174 @@ const AdminDashboard = () => {
         {error && <ErrorMessage message={error} onDismiss={() => setError('')} />}
         {success && <SuccessMessage message={success} onDismiss={() => setSuccess('')} />}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="card">
-            <h3 className="text-lg font-semibold mb-2">User Management</h3>
-            <p className="text-gray-600">Manage system users and roles</p>
+        {/* Quick Actions Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* User Management Card */}
+          <button
+            onClick={() => navigate('/admin/users')}
+            className="card hover:shadow-lg transition-shadow text-left group"
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center mb-3">
+                  <UsersIcon className="h-8 w-8 text-blue-600" />
+                  <h3 className="text-lg font-semibold ml-3">User Management</h3>
+                </div>
+                <p className="text-gray-600 text-sm mb-3">
+                  Manage system users, roles, and permissions
+                </p>
+              </div>
+              <ArrowRightIcon className="h-5 w-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
+            </div>
+          </button>
+
+          {/* Account Management Card */}
+          <button
+            onClick={() => navigate('/admin/accounts')}
+            className="card hover:shadow-lg transition-shadow text-left group"
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center mb-3">
+                  <BanknotesIcon className="h-8 w-8 text-green-600" />
+                  <h3 className="text-lg font-semibold ml-3">Accounts</h3>
+                </div>
+                <p className="text-gray-600 text-sm mb-3">
+                  View and manage customer accounts
+                </p>
+              </div>
+              <ArrowRightIcon className="h-5 w-5 text-gray-400 group-hover:text-green-600 transition-colors" />
+            </div>
+          </button>
+
+          {/* Audit Logs Card */}
+          <button
+            onClick={() => navigate('/auditor/audit-logs')}
+            className="card hover:shadow-lg transition-shadow text-left group"
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center mb-3">
+                  <DocumentTextIcon className="h-8 w-8 text-purple-600" />
+                  <h3 className="text-lg font-semibold ml-3">Audit Logs</h3>
+                </div>
+                <p className="text-gray-600 text-sm mb-3">
+                  View complete system audit logs
+                </p>
+              </div>
+              <ArrowRightIcon className="h-5 w-5 text-gray-400 group-hover:text-purple-600 transition-colors" />
+            </div>
+          </button>
+
+          {/* Security Events Card */}
+          <button
+            onClick={() => navigate('/auditor/security-events')}
+            className="card hover:shadow-lg transition-shadow text-left group"
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center mb-3">
+                  <ShieldCheckIcon className="h-8 w-8 text-red-600" />
+                  <h3 className="text-lg font-semibold ml-3">Security Events</h3>
+                </div>
+                <p className="text-gray-600 text-sm mb-3">
+                  Monitor and investigate security events
+                </p>
+              </div>
+              <ArrowRightIcon className="h-5 w-5 text-gray-400 group-hover:text-red-600 transition-colors" />
+            </div>
+          </button>
+
+          {/* Auditor Dashboard Card */}
+          <button
+            onClick={() => navigate('/auditor')}
+            className="card hover:shadow-lg transition-shadow text-left group"
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center mb-3">
+                  <ChartBarIcon className="h-8 w-8 text-indigo-600" />
+                  <h3 className="text-lg font-semibold ml-3">Audit Dashboard</h3>
+                </div>
+                <p className="text-gray-600 text-sm mb-3">
+                  View audit statistics and overview
+                </p>
+              </div>
+              <ArrowRightIcon className="h-5 w-5 text-gray-400 group-hover:text-indigo-600 transition-colors" />
+            </div>
+          </button>
+        </div>
+
+        {/* Recent Audit Logs Section */}
+        <div className="card">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold text-gray-900">Recent Audit Logs</h3>
+            <button
+              onClick={() => navigate('/auditor/audit-logs')}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              View All
+            </button>
           </div>
-          <div className="card">
-            <h3 className="text-lg font-semibold mb-2">System Stats</h3>
-            <p className="text-gray-600">View system statistics</p>
-          </div>
+
+          {loading ? (
+            <p className="text-gray-500 text-center py-4">Loading audit logs...</p>
+          ) : recentLogs.length === 0 ? (
+            <p className="text-gray-500 text-center py-4">No audit logs available</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Timestamp
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Service
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Action
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      User
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {recentLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        {new Date(log.timestamp).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <span className="px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800">
+                          {log.service || 'N/A'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{log.action}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {log.username || `User #${log.user_id}`}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded ${
+                            log.status === 'success'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {log.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Change Password Modal */}
